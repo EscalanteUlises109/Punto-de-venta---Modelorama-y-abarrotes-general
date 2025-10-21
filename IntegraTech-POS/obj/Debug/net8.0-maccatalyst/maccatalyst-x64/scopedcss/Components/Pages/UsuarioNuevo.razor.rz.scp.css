@@ -1,0 +1,21 @@
+/* Estilos específicos para Crear Usuario usando tokens del tema */
+
+.campo-label[b-hgbvj09t6v] {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+/* Ajuste de inputs para visualizar bien en dark mode */
+input.form-control.input-base[b-hgbvj09t6v],
+select.form-select.input-base[b-hgbvj09t6v] {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+/* Card spacing adjustments */
+.card.card-surface .card-body[b-hgbvj09t6v] {
+  padding: 20px;
+}
+
+/* Buttons spacing in footer */
+.btn + .btn[b-hgbvj09t6v] { margin-left: 8px; }

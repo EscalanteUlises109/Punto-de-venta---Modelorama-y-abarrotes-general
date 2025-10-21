@@ -1,0 +1,814 @@
+﻿@page "/ventas"
+@using IntegraTech_POS.Services
+@inject IVentaService VentaService
+@inject IProductoService ProductoService
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+@inject EventService EventService
+@inject BarcodeScannerService BarcodeScanner
+@inject ReceiptPrinterService ReceiptPrinter
+@inject IPromocionService PromocionService
+@inject DatabaseService DatabaseService
+@implements IDisposable
+
+<PageTitle>Punto de Venta</PageTitle>
+
+@if (!AuthService.IsAuthenticated)
+{
+    <div class="container mt-5">
+        <div class="alert alert-warning">
+            <h4><i class="bi bi-exclamation-triangle"></i> AutenticaciÃ³n Requerida</h4>
+            <p>Debes iniciar sesiÃ³n para acceder al punto de venta.</p>
+            <button class="btn btn-primary" @onclick='() => Navigation.NavigateTo("/login")'>
+                Iniciar SesiÃ³n
+            </button>
+        </div>
+    </div>
+    return;
+}
+
+
+<AlertaStockBajo @ref="alertaStockBajo" 
+                 NombreProducto="@productoAlerta" 
+                 StockActual="@stockActualAlerta" 
+                 StockMinimo="@stockMinimoAlerta"
+                 DuracionSegundos="5" />
+
+<div class="pos-container">
+    <div class="row g-0 h-100">
+        
+        <div class="col-md-8">
+            
+            <div class="pos-header">
+                <h1>
+                    <i class="bi bi-cart3"></i>
+                    Punto de Venta
+                    @if (escaneadorActivo)
+                    {
+                        <span class="scanner-badge ms-auto">
+                            <i class="bi bi-upc-scan"></i>
+                            EscÃ¡ner Activo
+                        </span>
+                    }
+                </h1>
+            </div>
+
+            
+            <div class="search-bar">
+                <i class="bi bi-search"></i>
+          <input type="text" 
+                       placeholder="Buscar productos por nombre o cÃ³digo..." 
+                       @bind="busqueda" 
+              @oninput="BuscarProductos" autofocus />
+            </div>
+
+            
+            <div class="products-grid">
+                @foreach (var producto in productosFiltrados)
+                {
+                    <div class="product-card" @onclick="() => AgregarAlCarrito(producto)">
+                        <ImagenProducto RutaImagen="@producto.ImagenPath" 
+                                      CssClass="product-image" />
+                        <div class="product-name">@producto.Nombre_Producto</div>
+                        <div class="product-price">$@producto.Precio_Venta.ToString("N2")</div>
+                        <div class="product-stock @(producto.Cantidad < 5 ? "low" : "")">
+                            Stock: @producto.Cantidad unidades
+                        </div>
+                        <button class="add-button" 
+                                disabled="@(producto.Cantidad == 0)"
+                                @onclick:stopPropagation="true"
+                                @onclick="() => AgregarAlCarrito(producto)">
+                            @if (producto.Cantidad == 0)
+                            {
+                                <text>Agotado</text>
+                            }
+                            else
+                            {
+                                <text><i class="bi bi-plus-lg"></i> Agregar</text>
+                            }
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+
+        
+        <div class="col-md-4">
+            <div class="card-surface elev-1" style="height: calc(100vh - 80px); display: flex; flex-direction: column;">
+                
+                <div class="cart-header-soft" style="flex-shrink: 0;">
+                    <h5 class="mb-0"><i class="bi bi-cart3 me-2"></i>Carrito de Compra</h5>
+                </div>
+
+                
+                <div class="p-3" style="overflow-y: auto; flex: 1;">
+                    @if (carrito.Any())
+                    {
+                        @foreach (var item in carrito)
+                        {
+                            <div class="card-surface mb-3 elev-1">
+                                <div class="p-3">
+                                    <div class="row g-2">
+                                        <div class="col-3">
+                                            <ImagenProducto RutaImagen="@item.Producto!.ImagenPath" 
+                                                          CssClass="img-fluid rounded" />
+                                        </div>
+                                        <div class="col-9">
+                                            <h6 class="mb-1">@item.Producto!.Nombre_Producto</h6>
+                                            <small class="text-muted">$@item.Precio_Unitario.ToString("N2") c/u</small>
+                                            <div class="mt-2 d-flex justify-content-between align-items-center">
+                                                <small class="label-blueblack">Subtotal</small>
+                                                <strong>$@item.Subtotal.ToString("N2")</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    
+                                    <div class="d-flex justify-content-between align-items-center mt-3">
+                                        <div class="btn-group" role="group">
+                                            
+                                            <button type="button" class="btn btn-danger" style="padding: 10px 18px;" @onclick="() => DisminuirCantidad(item)">
+                                                <span style="font-size: 1.3rem; font-weight: 900; line-height: 1;">-</span>
+                                            </button>
+                                            
+                                            <button type="button" class="btn btn-outline-secondary" style="padding: 10px 18px; min-width: 60px;" disabled>
+                                                <strong style="font-size: 1.2rem;">@item.Cantidad</strong>
+                                            </button>
+                                            
+                                            <button type="button" class="btn btn-success-brand" style="padding: 10px 18px;" @onclick="() => AumentarCantidad(item)">
+                                                <span style="font-size: 1.3rem; font-weight: 900; line-height: 1;">+</span>
+                                            </button>
+                                        </div>
+                                        
+                                        <button type="button" class="btn btn-outline-danger" style="padding: 10px 18px;" @onclick="() => RemoverDelCarrito(item)">
+                                            <i class="bi bi-trash-fill" style="font-size: 1.1rem; font-weight: 900; margin-right: 4px;"></i>
+                                            <span style="font-weight: 600;">Eliminar</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-center py-5 text-muted" aria-live="polite">
+                            <i class="bi bi-cart-x" style="font-size: 4rem;"></i>
+                            <p class="mt-3">El carrito estÃ¡ vacÃ­o</p>
+                            <small>Agrega productos para comenzar</small>
+                        </div>
+                    }
+                </div>
+
+                
+                <div class="cart-summary" style="flex-shrink: 0; overflow-y: auto; max-height: 45vh;">
+                    
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold label-blueblack">Cliente (Opcional)</label>
+                        <input type="text" class="input-base" @bind="ventaActual.Cliente" placeholder="Nombre del cliente" />
+                    </div>
+
+                    
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold label-blueblack">MÃ©todo de Pago</label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="metodo" id="efectivo" 
+                                   checked="@(ventaActual.Metodo_Pago == "Efectivo")" 
+                                   @onclick='() => ventaActual.Metodo_Pago = "Efectivo"'>
+                            <label class="btn btn-outline-secondary btn-sm" for="efectivo">
+                                <i class="bi bi-cash"></i> Efectivo
+                            </label>
+
+                            <input type="radio" class="btn-check" name="metodo" id="tarjeta" 
+                                   checked="@(ventaActual.Metodo_Pago == "Tarjeta")" 
+                                   @onclick='() => ventaActual.Metodo_Pago = "Tarjeta"'>
+                            <label class="btn btn-outline-secondary btn-sm" for="tarjeta">
+                                <i class="bi bi-credit-card"></i> Tarjeta
+                            </label>
+
+                            <input type="radio" class="btn-check" name="metodo" id="transferencia" 
+                                   checked="@(ventaActual.Metodo_Pago == "Transferencia")" 
+                                   @onclick='() => ventaActual.Metodo_Pago = "Transferencia"'>
+                            <label class="btn btn-outline-secondary btn-sm" for="transferencia">
+                                <i class="bi bi-bank"></i> Transferencia
+                            </label>
+
+                            <input type="radio" class="btn-check" name="metodo" id="otro" 
+                                   checked="@(ventaActual.Metodo_Pago == "Otro")" 
+                                   @onclick='() => ventaActual.Metodo_Pago = "Otro"'>
+                            <label class="btn btn-outline-secondary btn-sm" for="otro">
+                                <i class="bi bi-wallet2"></i> Otro
+                            </label>
+                        </div>
+                    </div>
+
+                    
+                    <div class="border-top pt-2 mb-3">
+                        <div class="d-flex justify-content-between mb-1 small">
+                            <span class="label-blueblack">Subtotal:</span>
+                            <span class="text-muted">$@SubtotalBruto.ToString("N2")</span>
+                        </div>
+                        @if (PromoDescuento > 0)
+                        {
+                            <div class="d-flex justify-content-between mb-1 small">
+                                <span class="label-blueblack">Descuento promociones:</span>
+                                <span class="text-danger">- $@PromoDescuento.ToString("N2")</span>
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(PromoNota))
+                            {
+                                <div class="small text-muted mb-1">@PromoNota</div>
+                            }
+                        }
+                        @if (ivaActivo)
+                        {
+                            <div class="d-flex justify-content-between mb-1 small">
+                                <span class="label-blueblack">IVA (@(Math.Round(ivaPorcentaje * 100, 0))%@(ivaModo == "incluido" ? " incluido" : "")):</span>
+                                <span class="text-muted">$@IvaMonto.ToString("N2")</span>
+                            </div>
+                        }
+                        <div class="d-flex justify-content-between mb-2 small">
+                            <span class="label-blueblack">Productos:</span>
+                            <span class="text-muted">@carrito.Sum(c => c.Cantidad) unidades</span>
+                        </div>
+                        <div class="d-flex justify-content-between border-top pt-2 align-items-baseline">
+                            <strong class="mb-0 label-blueblack">TOTAL:</strong>
+                            <h5 class="text-success mb-0">$@TotalPagar.ToString("N2")</h5>
+                        </div>
+                    </div>
+
+                    
+                    <button class="process-button" 
+                            @onclick="AbrirPago" 
+                            disabled="@(procesandoVenta || !carrito.Any())">
+                        @if (procesandoVenta)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                            <span>Procesando...</span>
+                        }
+                        else
+                        {
+                            <i class="bi bi-check-circle-fill me-2"></i>
+                            <span>Procesar Venta</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@if (mostrarPago)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content card-surface elev-2">
+                <div class="p-3 bg-brand-gradient text-white" style="border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);">
+                    <h5 class="mb-0"><i class="bi bi-cash-coin me-2"></i>Registrar pago</h5>
+                </div>
+                <div class="p-3 text-white">
+                    <div class="mb-2 d-flex justify-content-between align-items-center">
+                        <span class="text-white">Total a pagar</span>
+                        <h5 class="text-success mb-0">$@TotalPagar.ToString("N2")</h5>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold text-white">Pago recibido</label>
+                        <input class="input-base no-spinners" value="@pagoRecibidoTexto" inputmode="decimal" @oninput="OnPagoInput" />
+                        <div class="d-flex gap-2 mt-2">
+                            <button class="btn btn-outline-light btn-sm" @onclick="() => AjustarPago(10)">+10</button>
+                            <button class="btn btn-outline-light btn-sm" @onclick="() => AjustarPago(20)">+20</button>
+                            <button class="btn btn-outline-light btn-sm" @onclick="PagarExacto">Exacto</button>
+                            <button class="btn btn-outline-danger btn-sm" @onclick="BorrarPago">Borrar</button>
+                        </div>
+                        <small class="text-light">Valor: $@pagoRecibido.ToString("N2")</small>
+                        @if (!string.IsNullOrEmpty(errorPago))
+                        {
+                            <div class="text-danger small mt-1"><i class="bi bi-exclamation-triangle me-1"></i>@errorPago</div>
+                        }
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-white">Cambio</span>
+                        <h5 class="mb-0 text-white">$@Cambio.ToString("N2")</h5>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CerrarPago" disabled="@procesandoVenta">Cancelar</button>
+                    <button type="button" class="btn btn-primary-brand" @onclick="ConfirmarPago" disabled="@(!PuedeConfirmarPago || procesandoVenta)">
+                        @if (procesandoVenta)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                        }
+                        Confirmar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+
+@if (mostrarConfirmacion)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content card-surface elev-2">
+                <div class="p-3 bg-brand-gradient text-white" style="border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);">
+                    <h5 class="mb-0"><i class="bi bi-check-circle-fill me-2"></i>Â¡Venta realizada!</h5>
+                </div>
+                <div class="p-4 text-white">
+                    <div class="text-center mb-3">
+                        <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
+                        <h4 class="mt-3 text-white">Venta #@ultimaVentaId</h4>
+                        <p class="mb-1 text-white">Total: <strong class="text-white">$@ultimoTotal.ToString("N2")</strong></p>
+                        @if (ultimoPagoRecibido > 0)
+                        {
+                            <p class="mb-1 text-white">Pago: <strong>$@ultimoPagoRecibido.ToString("N2")</strong></p>
+                            <p class="mb-1 text-white">Cambio: <strong>$@ultimoCambio.ToString("N2")</strong></p>
+                        }
+                        <p class="text-light">Se ha registrado la venta exitosamente.</p>
+                    </div>
+
+                    <div class="border-top pt-3">
+                        <h6 class="text-white mb-2">Productos vendidos</h6>
+                        @if (ultimaVentaDetalles.Any())
+                        {
+                            <ul class="list-unstyled mb-0">
+                                @foreach (var d in ultimaVentaDetalles)
+                                {
+                                    <li class="d-flex justify-content-between">
+                                        <span>@(d.Producto?.Nombre_Producto ?? $"Prod #{d.Id_Producto}")</span>
+                                        <span>@d.Cantidad x $@d.Precio_Unitario.ToString("N2") = <strong>$@d.Subtotal.ToString("N2")</strong></span>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary-brand" @onclick="CerrarConfirmacion">Aceptar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Producto> productos = new();
+    private List<Producto> productosFiltrados = new();
+    private List<DetalleVenta> carrito = new();
+    private Venta ventaActual = new() { Metodo_Pago = "Efectivo" };
+    
+    private string busqueda = string.Empty;
+    private bool procesandoVenta = false;
+    private bool mostrarConfirmacion = false;
+    private bool mostrarPago = false;
+    private int ultimaVentaId = 0;
+    private decimal ultimoTotal = 0;
+    private bool escaneadorActivo = false;
+    private string? ultimoEscaneo = null;
+    private decimal pagoRecibido = 0m;
+    private string? errorPago;
+    private List<DetalleVenta> ultimaVentaDetalles = new();
+    private decimal ultimoPagoRecibido = 0m;
+    private decimal ultimoCambio = 0m;
+    private string pagoRecibidoTexto = "";
+    
+    private decimal PromoDescuento = 0m;
+    private string? PromoNota;
+    
+    
+    private AlertaStockBajo? alertaStockBajo;
+    private string productoAlerta = "";
+    private int stockActualAlerta = 0;
+    private int stockMinimoAlerta = 0;
+    
+    private bool ivaActivo = true; 
+    private decimal ivaPorcentaje = 0.16m; 
+    private string ivaModo = "excluido"; 
+
+    private decimal SubtotalBruto => carrito.Sum(c => c.Subtotal);
+    private decimal SubtotalNeto => Math.Max(0, SubtotalBruto - PromoDescuento);
+    private decimal IvaMonto => !ivaActivo
+        ? 0m
+        : (ivaModo == "incluido"
+            ? Math.Round(SubtotalNeto * ivaPorcentaje / (1 + ivaPorcentaje), 2)
+            : Math.Round(SubtotalNeto * ivaPorcentaje, 2));
+    private decimal TotalPagar => ivaModo == "incluido" ? SubtotalNeto : SubtotalNeto + (ivaActivo ? IvaMonto : 0m);
+    private decimal Cambio => Math.Max(0, Math.Round(pagoRecibido - TotalPagar, 2));
+    private bool PuedeConfirmarPago =>
+        ventaActual.Metodo_Pago == "Efectivo" ? pagoRecibido >= TotalPagar : true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarProductos();
+        BarcodeScanner.OnBarcodeScanned += OnBarcodeScanned;
+        
+        escaneadorActivo = false;
+        
+        
+        VerificarStockBajoInicial();
+
+        
+        try
+        {
+            var cfgActivo = await DatabaseService.ObtenerConfiguracionAsync("IVA_ACTIVO");
+            ivaActivo = string.Equals(cfgActivo, "true", StringComparison.OrdinalIgnoreCase);
+
+            var cfgIva = await DatabaseService.ObtenerConfiguracionAsync("IVA_PORCENTAJE");
+            if (!string.IsNullOrWhiteSpace(cfgIva) && decimal.TryParse(cfgIva, out var p))
+            {
+                if (p > 1) p = p / 100m; 
+                ivaPorcentaje = Math.Max(0, p);
+            }
+            var cfgModo = await DatabaseService.ObtenerConfiguracionAsync("IVA_MODO");
+            if (!string.IsNullOrWhiteSpace(cfgModo))
+            {
+                ivaModo = (cfgModo?.Trim().ToLowerInvariant() == "incluido") ? "incluido" : "excluido";
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"âš ï¸ No se pudo leer configuraciÃ³n de IVA: {ex.Message}");
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                await BarcodeScanner.InitializeAsync();
+                escaneadorActivo = true;
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"âš ï¸ No se pudo inicializar el escÃ¡ner: {ex.Message}");
+            }
+        }
+    }
+
+    private void VerificarStockBajoInicial()
+    {
+        if (productos == null || !productos.Any()) return;
+
+        foreach (var producto in productos)
+        {
+            
+            var umbralCritico = producto.Stock_Minimo * 0.25m;
+            
+            if (producto.Cantidad <= umbralCritico && producto.Stock_Minimo > 0)
+            {
+                productoAlerta = producto.Nombre_Producto;
+                stockActualAlerta = producto.Cantidad;
+                stockMinimoAlerta = producto.Stock_Minimo;
+                
+                StateHasChanged();
+                alertaStockBajo?.Mostrar();
+                
+                Console.WriteLine($"âš ï¸ ALERTA INICIAL: {producto.Nombre_Producto} tiene stock crÃ­tico ({producto.Cantidad}/{producto.Stock_Minimo})");
+                break; 
+            }
+        }
+    }
+
+    private void OnBarcodeScanned(string barcode)
+    {
+        ultimoEscaneo = barcode;
+        
+        
+        var producto = productos.FirstOrDefault(p => 
+            !string.IsNullOrEmpty(p.Codigo_Barras) && 
+            p.Codigo_Barras.Equals(barcode, StringComparison.OrdinalIgnoreCase));
+
+        if (producto != null)
+        {
+            AgregarAlCarrito(producto);
+            Console.WriteLine($"âœ… Producto '{producto.Nombre_Producto}' agregado al carrito por escaneo");
+            
+            busqueda = string.Empty;
+            productosFiltrados = productos;
+        }
+        else
+        {
+            Console.WriteLine($"âš ï¸ No se encontrÃ³ producto con cÃ³digo de barras: {barcode}");
+        }
+
+        InvokeAsync(StateHasChanged);
+        
+        
+        Task.Delay(3000).ContinueWith(_ =>
+        {
+            ultimoEscaneo = null;
+            InvokeAsync(StateHasChanged);
+        });
+    }
+
+    private async Task CargarProductos()
+    {
+        try
+        {
+            productos = await ProductoService.GetProductosAsync();
+            productosFiltrados = productos;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error cargando productos: {ex.Message}");
+        }
+    }
+
+    private void BuscarProductos()
+    {
+        if (string.IsNullOrWhiteSpace(busqueda))
+        {
+            productosFiltrados = productos;
+        }
+        else
+        {
+            productosFiltrados = productos
+                .Where(p => p.Nombre_Producto.Contains(busqueda, StringComparison.OrdinalIgnoreCase) ||
+                           p.Codigo_Barras.Contains(busqueda, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+        StateHasChanged();
+    }
+
+    private void AgregarAlCarrito(Producto producto)
+    {
+        var itemExistente = carrito.FirstOrDefault(c => c.Id_Producto == producto.Id_Producto);
+        
+        if (itemExistente != null)
+        {
+            
+            if (itemExistente.Cantidad < producto.Cantidad)
+            {
+                itemExistente.Cantidad++;
+                itemExistente.Subtotal = itemExistente.Cantidad * itemExistente.Precio_Unitario;
+            }
+            else
+            {
+                Console.WriteLine($"âš ï¸ Stock insuficiente para {producto.Nombre_Producto}. Stock disponible: {producto.Cantidad}");
+                
+            }
+        }
+        else
+        {
+            var nuevoItem = new DetalleVenta
+            {
+                Id_Producto = producto.Id_Producto,
+                Producto = producto,
+                Cantidad = 1,
+                Precio_Unitario = producto.Precio_Venta,
+                Subtotal = producto.Precio_Venta
+            };
+            carrito.Add(nuevoItem);
+        }
+        
+        
+        VerificarStockBajoProducto(producto);
+        
+        _ = RecalcularPromosAsync();
+        StateHasChanged();
+    }
+
+    private void VerificarStockBajoProducto(Producto producto)
+    {
+        
+        var umbralCritico = producto.Stock_Minimo * 0.25m;
+        
+        if (producto.Cantidad <= umbralCritico && producto.Stock_Minimo > 0)
+        {
+            productoAlerta = producto.Nombre_Producto;
+            stockActualAlerta = producto.Cantidad;
+            stockMinimoAlerta = producto.Stock_Minimo;
+            
+            StateHasChanged();
+            alertaStockBajo?.Mostrar();
+            
+            Console.WriteLine($"âš ï¸ ALERTA DE VENTA: {producto.Nombre_Producto} tiene stock crÃ­tico ({producto.Cantidad}/{producto.Stock_Minimo})");
+        }
+    }
+
+    private void AumentarCantidad(DetalleVenta item)
+    {
+        
+        if (item.Cantidad < item.Producto!.Cantidad)
+        {
+            item.Cantidad++;
+            item.Subtotal = item.Cantidad * item.Precio_Unitario;
+            _ = RecalcularPromosAsync();
+            StateHasChanged();
+        }
+        else
+        {
+            Console.WriteLine($"âš ï¸ No hay mÃ¡s stock disponible de {item.Producto.Nombre_Producto}");
+        }
+    }
+
+    private void DisminuirCantidad(DetalleVenta item)
+    {
+        if (item.Cantidad > 1)
+        {
+            item.Cantidad--;
+            item.Subtotal = item.Cantidad * item.Precio_Unitario;
+            _ = RecalcularPromosAsync();
+            StateHasChanged();
+        }
+        else
+        {
+            
+            RemoverDelCarrito(item);
+        }
+    }
+
+    private void RemoverDelCarrito(DetalleVenta item)
+    {
+        carrito.Remove(item);
+        _ = RecalcularPromosAsync();
+        StateHasChanged();
+    }
+
+    private void AbrirPago()
+    {
+        if (!carrito.Any()) return;
+        errorPago = null;
+        pagoRecibido = Math.Round(TotalPagar, 2); 
+        pagoRecibidoTexto = pagoRecibido.ToString("N2");
+        mostrarPago = true;
+        StateHasChanged();
+    }
+
+    private void CerrarPago()
+    {
+        mostrarPago = false;
+        StateHasChanged();
+    }
+
+    private async Task ConfirmarPago()
+    {
+        
+        if (ventaActual.Metodo_Pago == "Efectivo" && pagoRecibido < TotalPagar)
+        {
+            errorPago = "El pago recibido es menor que el total.";
+            StateHasChanged();
+            return;
+        }
+        
+        if (ventaActual.Metodo_Pago == "Efectivo")
+        {
+            ventaActual.PagoRecibido = Math.Round(pagoRecibido, 2);
+            ventaActual.Cambio = Math.Round(Cambio, 2);
+            ultimoPagoRecibido = ventaActual.PagoRecibido;
+            ultimoCambio = ventaActual.Cambio;
+        }
+        else
+        {
+            ventaActual.PagoRecibido = 0m;
+            ventaActual.Cambio = 0m;
+            ultimoPagoRecibido = 0m;
+            ultimoCambio = 0m;
+        }
+        
+        ultimaVentaDetalles = carrito.Select(c => new DetalleVenta
+        {
+            Id_Producto = c.Id_Producto,
+            Producto = c.Producto,
+            Cantidad = c.Cantidad,
+            Precio_Unitario = c.Precio_Unitario,
+            Subtotal = c.Subtotal
+        }).ToList();
+        await ProcesarVentaInterna();
+    }
+
+    private void OnPagoInput(ChangeEventArgs e)
+    {
+        pagoRecibidoTexto = e.Value?.ToString() ?? string.Empty;
+        var txt = pagoRecibidoTexto.Replace(" ", "").Replace(",", "").Trim();
+        if (decimal.TryParse(txt, System.Globalization.NumberStyles.AllowDecimalPoint, System.Globalization.CultureInfo.InvariantCulture, out var val))
+        {
+            pagoRecibido = Math.Max(0, Math.Round(val, 2));
+        }
+        
+        pagoRecibidoTexto = pagoRecibido.ToString("N2");
+        errorPago = null;
+        StateHasChanged();
+    }
+
+    private void AjustarPago(decimal incremento)
+    {
+        pagoRecibido = Math.Round(pagoRecibido + incremento, 2);
+        pagoRecibidoTexto = pagoRecibido.ToString("N2");
+    }
+
+    private void PagarExacto()
+    {
+        pagoRecibido = Math.Round(TotalPagar, 2);
+        pagoRecibidoTexto = pagoRecibido.ToString("N2");
+    }
+
+    private void BorrarPago()
+    {
+        pagoRecibido = 0m;
+        pagoRecibidoTexto = "";
+    }
+
+
+    private async Task ProcesarVentaInterna()
+    {
+        if (!carrito.Any()) return;
+
+        procesandoVenta = true;
+        StateHasChanged();
+
+        try
+        {
+            
+            ventaActual.Descuento = PromoDescuento;
+            if (!string.IsNullOrWhiteSpace(PromoNota))
+            {
+                if (string.IsNullOrWhiteSpace(ventaActual.Notas)) ventaActual.Notas = PromoNota!;
+                else ventaActual.Notas = $"{ventaActual.Notas} | {PromoNota}";
+            }
+            ventaActual.Impuesto = IvaMonto;
+            ventaActual.Total = TotalPagar;
+            ventaActual.Fecha_Venta = DateTime.Now;
+
+            var exito = await VentaService.GuardarVentaAsync(ventaActual, carrito);
+
+            if (exito)
+            {
+                ultimoTotal = ventaActual.Total;
+                ultimaVentaId = new Random().Next(1000, 9999); 
+                
+                
+                EventService.NotificarVentaRealizada();
+                
+                
+                try
+                {
+                    await ReceiptPrinter.PrintTicketAsync(ventaActual, carrito);
+                }
+                catch (Exception printEx)
+                {
+                    Console.WriteLine($"âš ï¸ No se pudo imprimir el ticket: {printEx.Message}");
+                }
+
+                
+                carrito.Clear();
+                ventaActual = new Venta { Metodo_Pago = "Efectivo" };
+                PromoDescuento = 0m;
+                PromoNota = null;
+                
+                
+                await CargarProductos();
+                
+                mostrarPago = false;
+                mostrarConfirmacion = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error procesando venta: {ex.Message}");
+        }
+        finally
+        {
+            procesandoVenta = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CerrarConfirmacion()
+    {
+        mostrarConfirmacion = false;
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        BarcodeScanner.OnBarcodeScanned -= OnBarcodeScanned;
+    }
+
+    private async Task RecalcularPromosAsync()
+    {
+        try
+        {
+            if (carrito.Count == 0)
+            {
+                PromoDescuento = 0m;
+                PromoNota = null;
+            }
+            else
+            {
+                var (descuento, nota) = await PromocionService.CalcularDescuentoAsync(carrito);
+                PromoDescuento = descuento;
+                PromoNota = string.IsNullOrWhiteSpace(nota) ? null : nota;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"âš ï¸ Error recalculando promociones: {ex.Message}");
+        }
+        StateHasChanged();
+    }
+}

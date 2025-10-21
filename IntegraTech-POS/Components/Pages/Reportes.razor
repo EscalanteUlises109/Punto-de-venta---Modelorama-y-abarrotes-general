@@ -1,0 +1,1103 @@
+﻿@page "/reportes"
+@using IntegraTech_POS.Services
+@using IntegraTech_POS.Models
+@using IntegraTech_POS.Components.Charts
+@using Microsoft.AspNetCore.Components.Forms
+@inject DatabaseService DatabaseService
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+@inject EventService EventService
+@inject ReportePDFService ReportePDFService
+@implements IDisposable
+
+<PageTitle>Reportes de Ganancias</PageTitle>
+
+@if (!AuthService.IsAuthenticated)
+{
+    <div class="container mt-5">
+        <div class="alert alert-warning">
+            <h4><i class="bi bi-exclamation-triangle"></i> AutenticaciÃ³n Requerida</h4>
+            <p>Debes iniciar sesiÃ³n para ver los reportes.</p>
+            <button class="btn btn-primary" @onclick='() => Navigation.NavigateTo("/login")'>
+                Iniciar SesiÃ³n
+            </button>
+        </div>
+    </div>
+    return;
+}
+
+<div class="container-fluid">
+    
+    <div class="card-surface mb-3">
+        <div class="p-3 d-flex flex-wrap gap-2 align-items-center">
+            <div class="me-2"><strong>Rango:</strong></div>
+            <div class="btn-group me-2" role="group">
+                <button class="btn btn-outline-light @(filtroRango == "hoy" ? "active" : "")" @onclick="SetFiltroHoy">Hoy</button>
+                <button class="btn btn-outline-light @(filtroRango == "semana" ? "active" : "")" @onclick="SetFiltroSemana">Semana</button>
+                <button class="btn btn-outline-light @(filtroRango == "mes" ? "active" : "")" @onclick="SetFiltroMes">Mes</button>
+                <button class="btn btn-outline-light @(filtroRango == "personalizado" ? "active" : "")" @onclick="SetFiltroPersonalizado">Personalizado</button>
+            </div>
+            @if (filtroRango == "personalizado")
+            {
+                <div class="d-flex align-items-center gap-2">
+                    <InputDate class="input-base" @bind-Value="fechaInicio" />
+                    <span class="text-muted">a</span>
+                    <InputDate class="input-base" @bind-Value="fechaFin" />
+                    <button class="btn btn-primary-brand" @onclick="AplicarRangoPersonalizado" disabled="@cargandoReportes">
+                        <i class="bi bi-funnel"></i> Aplicar
+                    </button>
+                </div>
+            }
+            <div class="ms-auto text-muted small">
+                <i class="bi bi-calendar3"></i> @fechaInicio.ToString("dd/MM/yyyy") - @fechaFin.ToString("dd/MM/yyyy")
+            </div>
+        </div>
+    </div>
+    <div class="card-surface mb-3">
+        <div class="d-flex justify-content-between align-items-center p-3 bg-brand-gradient text-white" style="border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);">
+            <h2 class="mb-0">ðŸ“Š Reportes de Ganancias</h2>
+            <div class="btn-group" role="group">
+            <button class="btn btn-danger" @onclick="GenerarReportePDF" disabled="@generandoPDF">
+                @if (generandoPDF)
+                {
+                    <span class="spinner-border spinner-border-sm me-2"></span>
+                }
+                else
+                {
+                    <i class="bi bi-file-pdf"></i>
+                }
+                Generar PDF
+            </button>
+            <button class="btn btn-success-brand" @onclick="GenerarReporteCSV" disabled="@generandoCSV">
+                @if (generandoCSV)
+                {
+                    <span class="spinner-border spinner-border-sm me-2"></span>
+                }
+                else
+                {
+                    <i class="bi bi-file-earmark-spreadsheet"></i>
+                }
+                Generar CSV
+            </button>
+            <button class="btn btn-primary-brand" @onclick="ActualizarReportes" disabled="@cargandoReportes">
+                @if (cargandoReportes)
+                {
+                    <span class="spinner-border spinner-border-sm me-2"></span>
+                }
+                else
+                {
+                    <i class="bi bi-arrow-clockwise"></i>
+                }
+                Actualizar
+            </button>
+            </div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(mensajeReporte))
+    {
+        <div class="alert @(reporteExitoso ? "alert-success" : "alert-danger") alert-dismissible fade show elev-1">
+            <i class="bi @(reporteExitoso ? "bi-check-circle" : "bi-exclamation-triangle")"></i> @mensajeReporte
+            <button type="button" class="btn-close" @onclick="() => mensajeReporte = null"></button>
+        </div>
+    }
+
+    
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card-surface bg-success-gradient text-white">
+                <div class="p-4 text-center" style="border-radius: var(--radius-lg);">
+                    <h3>ðŸ’° Ganancia Total del Negocio</h3>
+                    <h1 class="display-4">$@gananciaTotal.ToString("N2")</h1>
+                    <p class="mb-0">Desde el inicio de operaciones</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <ul class="nav nav-tabs mb-3">
+        <li class="nav-item">
+            <a class="nav-link @(pestanaActiva == "historial" ? "active" : "")" 
+               @onclick='() => CambiarPestana("historial")' 
+               href="javascript:void(0)">
+                ðŸ§¾ Historial de Ventas
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link @(pestanaActiva == "productos" ? "active" : "")" 
+               @onclick='() => CambiarPestana("productos")' 
+               href="javascript:void(0)">
+                ðŸ“¦ Por Producto
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link @(pestanaActiva == "categorias" ? "active" : "")" 
+               @onclick='() => CambiarPestana("categorias")' 
+               href="javascript:void(0)">
+                ðŸ·ï¸ Por CategorÃ­a
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link @(pestanaActiva == "distribuidores" ? "active" : "")" 
+               @onclick='() => CambiarPestana("distribuidores")' 
+               href="javascript:void(0)">
+                ðŸ­ Por Distribuidor
+            </a>
+        </li>
+    </ul>
+
+    
+    @if (pestanaActiva == "historial")
+    {
+        <div class="card-surface">
+            <div class="p-3 bg-brand-gradient text-white" style="border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);">
+                <h5 class="mb-0">ðŸŸ¾ Historial de Ventas</h5>
+            </div>
+            <div class="p-3">
+                @if (historialVentas != null && historialVentas.Any())
+                {
+                    @foreach (var venta in historialVentas.OrderByDescending(v => v.Fecha_Venta))
+                    {
+                        <div class="card-surface mb-3 elev-1">
+                            <div class="p-3" style="cursor: pointer;" @onclick="() => ToggleDetalleVenta(venta.Id_Venta)">
+                                <div class="row align-items-center">
+                                    <div class="col-md-1">
+                                        <strong class="text-primary">#@venta.Id_Venta</strong>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <small class="text-muted">Fecha</small><br>
+                                        <strong>@venta.Fecha_Venta.ToString("dd/MM/yyyy")</strong>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <small class="text-muted">Hora</small><br>
+                                        <span class="badge bg-info">@venta.Fecha_Venta.ToString("HH:mm:ss")</span>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <small class="text-muted">Cliente</small><br>
+                                        <strong>@(string.IsNullOrEmpty(venta.Cliente) ? "Cliente general" : venta.Cliente)</strong>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <small class="text-muted">MÃ©todo Pago</small><br>
+                                        <span class="badge bg-primary">@(string.IsNullOrEmpty(venta.Metodo_Pago) ? "Efectivo" : venta.Metodo_Pago)</span>
+                                    </div>
+                                    <div class="col-md-2 text-end">
+                                        <small class="text-muted">Total</small><br>
+                                        <strong class="text-success fs-5">$@venta.Total.ToString("N2")</strong>
+                                    </div>
+                                    <div class="col-md-1 text-end">
+                                        <i class="bi @(ventasExpandidas.Contains(venta.Id_Venta) ? "bi-chevron-up" : "bi-chevron-down")"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            @if (ventasExpandidas.Contains(venta.Id_Venta))
+                            {
+                                <div class="p-3">
+                                    @if (detallesVentas.ContainsKey(venta.Id_Venta))
+                                    {
+                                        var detalles = detallesVentas[venta.Id_Venta];
+                                        
+                                        <h6 class="mb-3"><i class="bi bi-cart-fill"></i> Productos Vendidos:</h6>
+                                        
+                                        <div class="table-responsive">
+                                            <table class="table table-sm data-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Producto</th>
+                                                        <th>CategorÃ­a</th>
+                                                        <th>Proveedor</th>
+                                                        <th class="text-center">Cantidad</th>
+                                                        <th class="text-end">Precio Unit.</th>
+                                                        <th class="text-end">Subtotal</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var detalle in detalles)
+                                                    {
+                                                        <tr>
+                                                            <td>
+                                                                <strong>@detalle.Producto?.Nombre_Producto</strong>
+                                                                @if (!string.IsNullOrEmpty(detalle.Producto?.Codigo_Barras))
+                                                                {
+                                                                    <br><small class="text-muted">CÃ³digo: @detalle.Producto.Codigo_Barras</small>
+                                                                }
+                                                            </td>
+                                                            <td>
+                                                                <span class="badge bg-secondary">
+                                                                    @(string.IsNullOrEmpty(detalle.Producto?.Categoria) ? "Sin categorÃ­a" : detalle.Producto.Categoria)
+                                                                </span>
+                                                            </td>
+                                                            <td>
+                                                                <span class="badge bg-info">
+                                                                    @(string.IsNullOrEmpty(detalle.Producto?.Distribuidor) ? "Sin proveedor" : detalle.Producto.Distribuidor)
+                                                                </span>
+                                                            </td>
+                                                            <td class="text-center">
+                                                                <span class="badge bg-dark">@detalle.Cantidad</span>
+                                                            </td>
+                                                            <td class="text-end">$@detalle.Precio_Unitario.ToString("N2")</td>
+                                                            <td class="text-end"><strong>$@detalle.Subtotal.ToString("N2")</strong></td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                                <tfoot>
+                                                    <tr>
+                                                        <td colspan="5" class="text-end"><strong>Subtotal:</strong></td>
+                                                        <td class="text-end"><strong>$@detalles.Sum(d => d.Subtotal).ToString("N2")</strong></td>
+                                                    </tr>
+                                                    @if (venta.Descuento > 0)
+                                                    {
+                                                        <tr>
+                                                            <td colspan="5" class="text-end"><strong>Descuento:</strong></td>
+                                                            <td class="text-end text-danger"><strong>-$@venta.Descuento.ToString("N2")</strong></td>
+                                                        </tr>
+                                                    }
+                                                    <tr class="table-success">
+                                                        <td colspan="5" class="text-end"><strong>TOTAL:</strong></td>
+                                                        <td class="text-end"><strong class="fs-5">$@venta.Total.ToString("N2")</strong></td>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+
+                                        @if (!string.IsNullOrEmpty(venta.Notas))
+                                        {
+                                            <div class="alert alert-info mt-2">
+                                                <strong><i class="bi bi-sticky"></i> Notas:</strong> @venta.Notas
+                                            </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <div class="text-center py-3">
+                                            <div class="spinner-border text-primary" role="status">
+                                                <span class="visually-hidden">Cargando...</span>
+                                            </div>
+                                            <p class="mt-2">Cargando detalles...</p>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-3">
+                            <div class="card-surface elev-1 p-3 text-center">
+                                <h6>Total de Ventas</h6>
+                                <h4>@historialVentas.Count</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card-surface elev-1 p-3 text-center">
+                                <h6>Ventas de Hoy</h6>
+                                <h4>@historialVentas.Count(v => v.Fecha_Venta.Date == DateTime.Today)</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card-surface elev-1 p-3 text-center">
+                                <h6>Total Recaudado</h6>
+                                <h4>$@historialVentas.Sum(v => v.Total).ToString("N2")</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card-surface elev-1 p-3 text-center">
+                                <h6>Ticket Promedio</h6>
+                                <h4>$@(historialVentas.Any() ? historialVentas.Average(v => v.Total).ToString("N2") : "0.00")</h4>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4">
+                        <p class="text-muted">No hay ventas registradas aÃºn</p>
+                        <p><small>Las ventas aparecerÃ¡n aquÃ­ cuando realices transacciones</small></p>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    @if (pestanaActiva == "productos")
+    {
+        <div class="card-surface">
+            <div class="p-3 bg-brand-gradient text-white" style="border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);">
+                <h5 class="mb-0">ðŸ“¦ Ganancia por Producto</h5>
+            </div>
+            <div class="p-3">
+                @if (gananciasProducto != null && gananciasProducto.Any())
+                {
+                    <div class="row mb-3">
+                        <div class="col-lg-6 mb-3">
+                            <div class="card-surface elev-1 p-2">
+                                <PieChart Title="Top 5 productos por ganancia" Doughnut="false" Height="120" MaxWidth="320" Labels="@gananciasProducto.OrderByDescending(g=>g.GananciaTotal).Take(5).Select(g=>g.NombreProducto)" Data="@gananciasProducto.OrderByDescending(g=>g.GananciaTotal).Take(5).Select(g=>g.GananciaTotal)" />
+                            </div>
+                        </div>
+                        <div class="col-lg-6 mb-3">
+                            <div class="card-surface elev-1 p-2">
+                                <PieChart Title="DistribuciÃ³n por categorÃ­a (por ganancia)" Doughnut="true" Height="120" MaxWidth="320" Labels="@gananciasProducto.GroupBy(g=>g.Categoria).OrderByDescending(grp=>grp.Sum(x=>x.GananciaTotal)).Select(grp=>grp.Key)" Data="@gananciasProducto.GroupBy(g=>g.Categoria).OrderByDescending(grp=>grp.Sum(x=>x.GananciaTotal)).Select(grp=>grp.Sum(x=>x.GananciaTotal))" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-lg-6 mb-3">
+                            <div class="card-surface elev-1 p-2">
+                                <PieChart Title="Top 5 productos por unidades" Doughnut="false" Height="120" MaxWidth="320" Labels="@gananciasProducto.OrderByDescending(g=>g.CantidadVendida).Take(5).Select(g=>g.NombreProducto)" Data="@gananciasProducto.OrderByDescending(g=>g.CantidadVendida).Take(5).Select(g=> (decimal)g.CantidadVendida)" />
+                            </div>
+                        </div>
+                        <div class="col-lg-6 mb-3">
+                            <div class="card-surface elev-1 p-2">
+                                <PieChart Title="DistribuciÃ³n por categorÃ­a (unidades)" Doughnut="true" Height="120" MaxWidth="320" Labels="@gananciasProducto.GroupBy(g=>g.Categoria).OrderByDescending(grp=>grp.Sum(x=>x.CantidadVendida)).Select(grp=>grp.Key)" Data="@gananciasProducto.GroupBy(g=>g.Categoria).OrderByDescending(grp=>grp.Sum(x=>x.CantidadVendida)).Select(grp=> (decimal)grp.Sum(x=>x.CantidadVendida))" />
+                            </div>
+                        </div>
+                    </div>
+
+                    
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="card-surface elev-1 p-3">
+                                <h6 class="mb-3">ðŸ† Top productos mÃ¡s vendidos (cantidad)</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Producto</th>
+                                                <th class="text-end">Unidades</th>
+                                                <th class="text-end">Ganancia</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var item in gananciasProducto.OrderByDescending(g=>g.CantidadVendida).Take(10).Select((g,idx)=> new { idx, g }))
+                                            {
+                                                <tr>
+                                                    <td>@(item.idx+1)</td>
+                                                    <td><strong>@item.g.NombreProducto</strong></td>
+                                                    <td class="text-end">@item.g.CantidadVendida</td>
+                                                    <td class="text-end">$@item.g.GananciaTotal.ToString("N2")</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table data-table">
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>CategorÃ­a</th>
+                                    <th class="text-end">Precio Venta</th>
+                                    <th class="text-end">Precio Compra</th>
+                                    <th class="text-end">Ganancia/Unidad</th>
+                                    <th class="text-end">Cantidad Vendida</th>
+                                    <th class="text-end">Ganancia Total</th>
+                                    <th class="text-end">Margen %</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var producto in gananciasProducto)
+                                {
+                                    <tr>
+                                        <td><strong>@producto.NombreProducto</strong></td>
+                                        <td><span class="badge bg-secondary">@producto.Categoria</span></td>
+                                        <td class="text-end">$@producto.PrecioVenta.ToString("N2")</td>
+                                        <td class="text-end">$@producto.PrecioCompra.ToString("N2")</td>
+                                        <td class="text-end">
+                                            <span class="text-success">+$@producto.GananciaPorUnidad.ToString("N2")</span>
+                                        </td>
+                                        <td class="text-end">@producto.CantidadVendida</td>
+                                        <td class="text-end">
+                                            <strong class="text-success">$@producto.GananciaTotal.ToString("N2")</strong>
+                                        </td>
+                                        <td class="text-end">
+                                            <span class="badge @(producto.PorcentajeMargen > 30 ? "bg-success" : producto.PorcentajeMargen > 15 ? "bg-warning" : "bg-danger")">
+                                                @producto.PorcentajeMargen.ToString("F1")%
+                                            </span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-3">
+                            <div class="card-surface elev-1 p-3 text-center">
+                                <h6>Productos con Ventas</h6>
+                                <h4>@gananciasProducto.Count(g => g.CantidadVendida > 0)</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card-surface elev-1 p-3 text-center">
+                                <h6>Unidades Vendidas</h6>
+                                <h4>@gananciasProducto.Sum(g => g.CantidadVendida)</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card-surface elev-1 p-3 text-center">
+                                <h6>Producto MÃ¡s Rentable</h6>
+                                <h4 class="small">@(gananciasProducto.OrderByDescending(g => g.GananciaTotal).FirstOrDefault()?.NombreProducto ?? "N/A")</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card-surface elev-1 p-3 text-center">
+                                <h6>Margen Promedio</h6>
+                                <h4>@(gananciasProducto.Any() ? gananciasProducto.Average(g => g.PorcentajeMargen).ToString("F1") : "0")%</h4>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4">
+                        <p class="text-muted">No hay productos vendidos aÃºn</p>
+                        <p><small>Las ganancias aparecerÃ¡n cuando realices ventas</small></p>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    @if (pestanaActiva == "categorias")
+    {
+        <div class="card-surface">
+            <div class="p-3 bg-brand-gradient text-white" style="border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);">
+                <h5 class="mb-0">ðŸ·ï¸ Ganancia por CategorÃ­a</h5>
+            </div>
+            <div class="p-3">
+                @if (gananciasCategoria != null && gananciasCategoria.Any())
+                {
+                    <div class="row mb-3">
+                        <div class="col-lg-6 mb-3">
+                            <div class="card-surface elev-1 p-2">
+                                <PieChart Title="ParticipaciÃ³n por categorÃ­a (ganancia)" Doughnut="true" Height="120" MaxWidth="320" Labels="@gananciasCategoria.Select(c=>c.Categoria)" Data="@gananciasCategoria.Select(c=>c.GananciaTotal)" />
+                            </div>
+                        </div>
+                        <div class="col-lg-6 mb-3">
+                            <div class="card-surface elev-1 p-2">
+                                <PieChart Title="ParticipaciÃ³n por categorÃ­a (ventas $)" Doughnut="true" Height="120" MaxWidth="320" Labels="@gananciasCategoria.Select(c=>c.Categoria)" Data="@gananciasCategoria.Select(c=>c.VentaTotal)" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table data-table">
+                            <thead>
+                                <tr>
+                                    <th>CategorÃ­a</th>
+                                    <th class="text-end">Productos</th>
+                                    <th class="text-end">Total Vendido</th>
+                                    <th class="text-end">Venta Total</th>
+                                    <th class="text-end">Ganancia Total</th>
+                                    <th class="text-end">Margen %</th>
+                                    <th class="text-end">Visual</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var categoria in gananciasCategoria)
+                                {
+                                    <tr>
+                                        <td>
+                                            <strong>@categoria.Categoria</strong>
+                                        </td>
+                                        <td class="text-end">@categoria.CantidadProductos</td>
+                                        <td class="text-end">@categoria.TotalVendido unidades</td>
+                                        <td class="text-end">$@categoria.VentaTotal.ToString("N2")</td>
+                                        <td class="text-end">
+                                            <strong class="text-success">$@categoria.GananciaTotal.ToString("N2")</strong>
+                                        </td>
+                                        <td class="text-end">
+                                            <span class="badge @(categoria.PorcentajeMargen > 30 ? "bg-success" : categoria.PorcentajeMargen > 15 ? "bg-warning" : "bg-danger")">
+                                                @categoria.PorcentajeMargen.ToString("F1")%
+                                            </span>
+                                        </td>
+                                        <td class="text-end">
+                                            <div class="progress" style="width: 60px; height: 15px;">
+                                                <div class="progress-bar bg-success" 
+                                                     style="width: @Math.Min(100, categoria.PorcentajeMargen * 2)%">
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-4">
+                            <div class="card-surface elev-1 p-3 text-center">
+                                <h6>CategorÃ­as Activas</h6>
+                                <h4>@gananciasCategoria.Count</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card-surface elev-1 p-3 text-center">
+                                <h6>CategorÃ­a MÃ¡s Rentable</h6>
+                                <h4 class="small">@(gananciasCategoria.OrderByDescending(g => g.GananciaTotal).FirstOrDefault()?.Categoria ?? "N/A")</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card-surface elev-1 p-3 text-center">
+                                <h6>Ventas Totales</h6>
+                                <h4>$@gananciasCategoria.Sum(g => g.VentaTotal).ToString("N2")</h4>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4">
+                        <p class="text-muted">No hay categorÃ­as con ventas aÃºn</p>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    @if (pestanaActiva == "distribuidores")
+    {
+        <div class="card-surface">
+            <div class="p-3 bg-brand-gradient text-white" style="border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);">
+                <h5 class="mb-0">ðŸ­ Ganancia por Distribuidor</h5>
+            </div>
+            <div class="p-3">
+                @if (gananciasProducto != null && gananciasProducto.Any())
+                {
+                    var porDistribuidor = gananciasProducto
+                        .GroupBy(g => string.IsNullOrWhiteSpace(g.Distribuidor) ? "Sin proveedor" : g.Distribuidor)
+                        .Select(grp => new { Distribuidor = grp.Key, Ganancia = grp.Sum(x => x.GananciaTotal), Unidades = grp.Sum(x=>x.CantidadVendida) })
+                        .OrderByDescending(x => x.Ganancia)
+                        .ToList();
+
+                    <div class="row mb-3">
+                        <div class="col-lg-6 mb-3">
+                            <div class="card-surface elev-1 p-2">
+                                <PieChart Title="ParticipaciÃ³n por ganancia" Doughnut="true" Height="120" MaxWidth="320" Labels="@porDistribuidor.Select(x=>x.Distribuidor)" Data="@porDistribuidor.Select(x=>x.Ganancia)" />
+                            </div>
+                        </div>
+                        <div class="col-lg-6 mb-3">
+                            <div class="card-surface elev-1 p-2">
+                                <PieChart Title="ParticipaciÃ³n por unidades vendidas" Doughnut="true" Height="120" MaxWidth="320" Labels="@porDistribuidor.Select(x=>x.Distribuidor)" Data="@porDistribuidor.Select(x=> (decimal)x.Unidades)" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table data-table">
+                            <thead>
+                                <tr>
+                                    <th>Distribuidor</th>
+                                    <th class="text-end">Unidades</th>
+                                    <th class="text-end">Ganancia Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var d in porDistribuidor)
+                                {
+                                    <tr>
+                                        <td><strong>@d.Distribuidor</strong></td>
+                                        <td class="text-end">@d.Unidades</td>
+                                        <td class="text-end"><strong class="text-success">$@d.Ganancia.ToString("N2")</strong></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4">
+                        <p class="text-muted">No hay datos para distribuidores</p>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    
+    <div class="card-surface mt-4">
+        <div class="p-3 bg-brand-gradient text-white" style="border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);">
+            <h5 class="mb-0">ðŸ’¡ Â¿CÃ³mo se calculan las ganancias?</h5>
+        </div>
+        <div class="p-3">
+            <div class="row">
+                <div class="col-md-4">
+                    <h6>ðŸ“ FÃ³rmula Simple</h6>
+                    <p class="text-muted">
+                        <strong>Ganancia = (Precio Venta - Precio Compra) Ã— Cantidad Vendida</strong>
+                    </p>
+                    <p class="small">
+                        Ejemplo: Coca $25 (venta) - $20 (compra) = $5 ganancia por unidad.<br>
+                        Si vendes 10 Cocas = $5 Ã— 10 = $50 ganancia total.
+                    </p>
+                </div>
+                <div class="col-md-4">
+                    <h6>ðŸ“Š Margen de Ganancia</h6>
+                    <p class="text-muted">
+                        <strong>Margen % = (Ganancia Ã· Precio Venta) Ã— 100</strong>
+                    </p>
+                    <p class="small">
+                        Ejemplo: $5 ganancia Ã· $25 venta = 20% margen.<br>
+                        Esto te dice quÃ© porcentaje de cada venta es ganancia pura.
+                    </p>
+                </div>
+                <div class="col-md-4">
+                    <h6>ðŸŽ¯ CÃ³digos de Color</h6>
+                    <ul class="small">
+                        <li><span class="badge bg-success">Verde</span> - Margen > 30% (Excelente)</li>
+                        <li><span class="badge bg-warning">Amarillo</span> - Margen 15-30% (Bueno)</li>
+                        <li><span class="badge bg-danger">Rojo</span> - Margen &lt; 15% (Mejorar)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    
+    private HashSet<int> ventasExpandidas = new HashSet<int>();
+    private Dictionary<int, List<DetalleVenta>> detallesVentas = new Dictionary<int, List<DetalleVenta>>();
+    
+    private decimal gananciaTotal = 0;
+    private List<GananciaProducto>? gananciasProducto;
+    private List<GananciaCategoria>? gananciasCategoria;
+    private List<Venta>? historialVentas;
+    private string pestanaActiva = "historial";
+    private bool generandoPDF = false;
+    private bool generandoCSV = false;
+    private string? mensajeReporte = null;
+    private bool reporteExitoso = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        
+        EventService.VentaRealizada += OnVentaRealizada;
+        InicializarRango();
+        await CargarReportes();
+    }
+
+    private async void OnVentaRealizada()
+    {
+        Console.WriteLine("ðŸ”„ Evento recibido: Venta realizada, actualizando reportes...");
+        await ActualizarReportes();
+    }
+
+    private async Task CargarReportes()
+    {
+        try
+        {
+            await DatabaseService.InitializeAsync();
+            
+            historialVentas = await DatabaseService.GetVentasPorFechaAsync(fechaInicio, fechaFin);
+            Console.WriteLine($"Debug: Ventas cargadas (rango): {historialVentas?.Count ?? 0}");
+
+            
+            gananciasProducto = await CalcularGananciaPorProductoEnRango(historialVentas);
+            gananciasCategoria = gananciasProducto
+                .GroupBy(g => g.Categoria)
+                .Select(group => new GananciaCategoria
+                {
+                    Categoria = group.Key,
+                    CantidadProductos = group.Count(),
+                    TotalVendido = group.Sum(g => g.CantidadVendida),
+                    GananciaTotal = group.Sum(g => g.GananciaTotal),
+                    VentaTotal = group.Sum(g => g.PrecioVenta * g.CantidadVendida)
+                })
+                .OrderByDescending(g => g.GananciaTotal)
+                .ToList();
+
+            gananciaTotal = gananciasProducto.Sum(g => g.GananciaTotal);
+            
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error cargando reportes: {ex.Message}");
+        }
+    }
+
+    private bool cargandoReportes = false;
+    private string filtroRango = "hoy";
+    private DateTime fechaInicio = DateTime.Today;
+    private DateTime fechaFin = DateTime.Today.AddDays(1).AddTicks(-1);
+
+    private void InicializarRango()
+    {
+        filtroRango = "hoy";
+        fechaInicio = DateTime.Today;
+        fechaFin = DateTime.Today.AddDays(1).AddTicks(-1);
+    }
+
+    private void CambiarFiltroRango(string filtro)
+    {
+        filtroRango = filtro;
+        if (filtro == "hoy")
+        {
+            fechaInicio = DateTime.Today;
+            fechaFin = DateTime.Today.AddDays(1).AddTicks(-1);
+            _ = ActualizarReportes();
+        }
+        else if (filtro == "semana")
+        {
+            var start = DateTime.Today.AddDays(-(int)DateTime.Today.DayOfWeek);
+            fechaInicio = start;
+            fechaFin = start.AddDays(7).AddTicks(-1);
+            _ = ActualizarReportes();
+        }
+        else if (filtro == "mes")
+        {
+            var inicioMes = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+            fechaInicio = inicioMes;
+            fechaFin = inicioMes.AddMonths(1).AddTicks(-1);
+            _ = ActualizarReportes();
+        }
+        else if (filtro == "personalizado")
+        {
+            
+        }
+    }
+
+    private async Task AplicarRangoPersonalizado()
+    {
+        if (fechaFin < fechaInicio)
+        {
+            
+            var tmp = fechaInicio;
+            fechaInicio = fechaFin.Date;
+            fechaFin = tmp.Date.AddDays(1).AddTicks(-1);
+        }
+        else
+        {
+            fechaInicio = fechaInicio.Date;
+            fechaFin = fechaFin.Date.AddDays(1).AddTicks(-1);
+        }
+        await ActualizarReportes();
+    }
+
+    private void SetFiltroHoy() => CambiarFiltroRango("hoy");
+    private void SetFiltroSemana() => CambiarFiltroRango("semana");
+    private void SetFiltroMes() => CambiarFiltroRango("mes");
+    private void SetFiltroPersonalizado() => CambiarFiltroRango("personalizado");
+
+    private async Task ToggleDetalleVenta(int ventaId)
+    {
+        if (ventasExpandidas.Contains(ventaId))
+        {
+            
+            ventasExpandidas.Remove(ventaId);
+        }
+        else
+        {
+            
+            ventasExpandidas.Add(ventaId);
+            
+            if (!detallesVentas.ContainsKey(ventaId))
+            {
+                await CargarDetallesVenta(ventaId);
+            }
+        }
+        
+        StateHasChanged();
+    }
+
+    private async Task CargarDetallesVenta(int ventaId)
+    {
+        try
+        {
+            var detalles = await DatabaseService.GetDetallesVentaConProductosAsync(ventaId);
+            detallesVentas[ventaId] = detalles;
+            Console.WriteLine($"âœ… Detalles cargados para venta #{ventaId}: {detalles.Count} productos");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"âŒ Error cargando detalles de venta #{ventaId}: {ex.Message}");
+        }
+    }
+
+    private async Task ActualizarReportes()
+    {
+        cargandoReportes = true;
+        StateHasChanged();
+        
+        try
+        {
+            await CargarReportes();
+        }
+        finally
+        {
+            cargandoReportes = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CambiarPestana(string nuevaPestana)
+    {
+        pestanaActiva = nuevaPestana;
+        StateHasChanged();
+    }
+
+    private async Task GenerarReportePDF()
+    {
+        generandoPDF = true;
+        mensajeReporte = null;
+        StateHasChanged();
+
+        try
+        {
+            if (historialVentas == null || !historialVentas.Any())
+            {
+                mensajeReporte = "No hay ventas registradas para generar el reporte.";
+                reporteExitoso = false;
+                return;
+            }
+
+            
+            var ventasHoy = historialVentas.Where(v => v.Fecha_Venta.Date == DateTime.Today).ToList();
+
+            if (!ventasHoy.Any())
+            {
+                mensajeReporte = $"No hay ventas registradas para el dÃ­a de hoy ({DateTime.Today:dd/MM/yyyy}).";
+                reporteExitoso = false;
+                return;
+            }
+
+            Console.WriteLine($"ðŸ“„ Generando reporte PDF con {ventasHoy.Count} ventas del dÃ­a {DateTime.Today:dd/MM/yyyy}");
+
+            
+            var filePath = await ReportePDFService.GenerarReporteVentasPDFAsync(ventasHoy, DateTime.Today, DatabaseService);
+
+            if (!string.IsNullOrEmpty(filePath) && File.Exists(filePath))
+            {
+                mensajeReporte = $"âœ… Reporte PDF generado exitosamente: {Path.GetFileName(filePath)}. Total de ventas: {ventasHoy.Count}, Total recaudado: ${ventasHoy.Sum(v => v.Total):N2}";
+                reporteExitoso = true;
+
+                
+                try
+                {
+                    await Launcher.OpenAsync(new OpenFileRequest
+                    {
+                        File = new ReadOnlyFile(filePath)
+                    });
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"âš ï¸ No se pudo abrir el archivo automÃ¡ticamente: {ex.Message}");
+                }
+            }
+            else
+            {
+                mensajeReporte = "âŒ Error al generar el reporte PDF. Por favor, intente nuevamente.";
+                reporteExitoso = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"âŒ Error generando PDF: {ex.Message}");
+            Console.WriteLine($"   Stack: {ex.StackTrace}");
+            mensajeReporte = $"âŒ Error al generar el reporte PDF: {ex.Message}";
+            reporteExitoso = false;
+        }
+        finally
+        {
+            generandoPDF = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task GenerarReporteCSV()
+    {
+        generandoCSV = true;
+        mensajeReporte = null;
+        StateHasChanged();
+
+        try
+        {
+            if (historialVentas == null || !historialVentas.Any())
+            {
+                mensajeReporte = "No hay ventas registradas para generar el reporte.";
+                reporteExitoso = false;
+                return;
+            }
+
+            
+            var ventasHoy = historialVentas.Where(v => v.Fecha_Venta.Date == DateTime.Today).ToList();
+
+            if (!ventasHoy.Any())
+            {
+                mensajeReporte = $"No hay ventas registradas para el dÃ­a de hoy ({DateTime.Today:dd/MM/yyyy}).";
+                reporteExitoso = false;
+                return;
+            }
+
+            Console.WriteLine($"ðŸ“Š Generando reporte CSV con {ventasHoy.Count} ventas del dÃ­a {DateTime.Today:dd/MM/yyyy}");
+
+            
+            var filePath = await GenerarReporteCSVAsync(ventasHoy, DateTime.Today);
+
+            if (!string.IsNullOrEmpty(filePath) && File.Exists(filePath))
+            {
+                mensajeReporte = $"âœ… Reporte CSV generado exitosamente: {Path.GetFileName(filePath)}. Total de ventas: {ventasHoy.Count}, Total recaudado: ${ventasHoy.Sum(v => v.Total):N2}";
+                reporteExitoso = true;
+
+                
+                try
+                {
+                    await Launcher.OpenAsync(new OpenFileRequest
+                    {
+                        File = new ReadOnlyFile(filePath)
+                    });
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"âš ï¸ No se pudo abrir el archivo automÃ¡ticamente: {ex.Message}");
+                }
+            }
+            else
+            {
+                mensajeReporte = "âŒ Error al generar el reporte CSV. Por favor, intente nuevamente.";
+                reporteExitoso = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"âŒ Error generando CSV: {ex.Message}");
+            Console.WriteLine($"   Stack: {ex.StackTrace}");
+            mensajeReporte = $"âŒ Error al generar el reporte CSV: {ex.Message}";
+            reporteExitoso = false;
+        }
+        finally
+        {
+            generandoCSV = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task<string> GenerarReporteCSVAsync(List<Venta> ventas, DateTime fecha)
+    {
+        try
+        {
+            var fileName = $"Reporte_Ventas_Detallado_{fecha:yyyy-MM-dd}.csv";
+            var directorio = Path.Combine(FileSystem.AppDataDirectory, "Reportes");
+            
+            if (!Directory.Exists(directorio))
+            {
+                Directory.CreateDirectory(directorio);
+            }
+            
+            var filePath = Path.Combine(directorio, fileName);
+            
+            var csv = new System.Text.StringBuilder();
+            
+            
+            csv.AppendLine("# Venta,Fecha,Hora,Cliente,MÃ©todo Pago,Producto,CategorÃ­a,Proveedor,Cantidad,Precio Unit.,Subtotal,Total Venta,Descuento,Notas");
+            
+            foreach (var venta in ventas.OrderBy(v => v.Fecha_Venta))
+            {
+                
+                var detalles = await DatabaseService.GetDetallesVentaConProductosAsync(venta.Id_Venta);
+                
+                if (detalles.Any())
+                {
+                    foreach (var detalle in detalles)
+                    {
+                        csv.AppendLine($"{venta.Id_Venta}," +
+                                     $"{venta.Fecha_Venta:dd/MM/yyyy}," +
+                                     $"{venta.Fecha_Venta:HH:mm:ss}," +
+                                     $"\"{(string.IsNullOrEmpty(venta.Cliente) ? "Cliente general" : venta.Cliente)}\"," +
+                                     $"\"{(string.IsNullOrEmpty(venta.Metodo_Pago) ? "Efectivo" : venta.Metodo_Pago)}\"," +
+                                     $"\"{detalle.Producto?.Nombre_Producto ?? "N/A"}\"," +
+                                     $"\"{(string.IsNullOrEmpty(detalle.Producto?.Categoria) ? "Sin categorÃ­a" : detalle.Producto.Categoria)}\"," +
+                                     $"\"{(string.IsNullOrEmpty(detalle.Producto?.Distribuidor) ? "Sin proveedor" : detalle.Producto.Distribuidor)}\"," +
+                                     $"{detalle.Cantidad}," +
+                                     $"{detalle.Precio_Unitario:N2}," +
+                                     $"{detalle.Subtotal:N2}," +
+                                     $"{venta.Total:N2}," +
+                                     $"{venta.Descuento:N2}," +
+                                     $"\"{(string.IsNullOrEmpty(venta.Notas) ? "" : venta.Notas)}\"");
+                    }
+                }
+                else
+                {
+                    
+                    csv.AppendLine($"{venta.Id_Venta}," +
+                                 $"{venta.Fecha_Venta:dd/MM/yyyy}," +
+                                 $"{venta.Fecha_Venta:HH:mm:ss}," +
+                                 $"\"{(string.IsNullOrEmpty(venta.Cliente) ? "Cliente general" : venta.Cliente)}\"," +
+                                 $"\"{(string.IsNullOrEmpty(venta.Metodo_Pago) ? "Efectivo" : venta.Metodo_Pago)}\"," +
+                                 $"\"Sin productos\"," +
+                                 $"\"N/A\"," +
+                                 $"\"N/A\"," +
+                                 $"0," +
+                                 $"0.00," +
+                                 $"0.00," +
+                                 $"{venta.Total:N2}," +
+                                 $"{venta.Descuento:N2}," +
+                                 $"\"{(string.IsNullOrEmpty(venta.Notas) ? "" : venta.Notas)}\"");
+                }
+            }
+            
+            await File.WriteAllTextAsync(filePath, csv.ToString());
+            Console.WriteLine($"âœ… CSV detallado generado: {filePath}");
+            return filePath;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"âŒ Error generando CSV: {ex.Message}");
+            return string.Empty;
+        }
+    }
+
+    public void Dispose()
+    {
+        
+        EventService.VentaRealizada -= OnVentaRealizada;
+    }
+
+    private async Task<List<GananciaProducto>> CalcularGananciaPorProductoEnRango(List<Venta>? ventasRango)
+    {
+        var list = new List<GananciaProducto>();
+        if (ventasRango == null || ventasRango.Count == 0) return list;
+
+        var mapa = new Dictionary<int, GananciaProducto>();
+
+        foreach (var venta in ventasRango)
+        {
+            var detalles = await DatabaseService.GetDetallesVentaConProductosAsync(venta.Id_Venta);
+            foreach (var d in detalles)
+            {
+                if (d.Producto == null) continue;
+                var id = d.Producto.Id_Producto;
+                if (!mapa.TryGetValue(id, out var agg))
+                {
+                    var gananciaUnidad = d.Producto.Precio_Venta - d.Producto.Precio_Compra;
+                    agg = new GananciaProducto
+                    {
+                        NombreProducto = d.Producto.Nombre_Producto,
+                        Categoria = d.Producto.Categoria,
+                        Distribuidor = d.Producto.Distribuidor,
+                        PrecioVenta = d.Producto.Precio_Venta,
+                        PrecioCompra = d.Producto.Precio_Compra,
+                        GananciaPorUnidad = gananciaUnidad,
+                        CantidadVendida = 0,
+                        GananciaTotal = 0
+                    };
+                    mapa[id] = agg;
+                }
+                agg.CantidadVendida += d.Cantidad;
+                agg.GananciaTotal += agg.GananciaPorUnidad * d.Cantidad;
+            }
+        }
+
+        list = mapa.Values.OrderByDescending(g => g.GananciaTotal).ToList();
+        return list;
+    }
+}

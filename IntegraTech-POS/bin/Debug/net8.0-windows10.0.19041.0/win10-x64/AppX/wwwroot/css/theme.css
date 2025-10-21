@@ -1,0 +1,183 @@
+/* IntegraTech POS Design Tokens and Utilities */
+
+:root {
+  /* Palette */
+  --color-bg: #f5f7fa;
+  --color-surface: #ffffff;
+  --color-surface-2: #f7fafc;
+  --color-border: #e2e8f0;
+  --color-text: #2d3748;
+  --color-text-muted: #718096;
+
+  /* Brand */
+  --color-primary: #667eea; /* Indigo 400 */
+  --color-primary-2: #764ba2; /* Purple 500 */
+  --color-success: #48bb78; /* Green 400 */
+  --color-success-2: #38a169; /* Green 500 */
+  --color-danger: #e53e3e; /* Red 500 */
+  --color-warning: #f6ad55; /* Orange 400 */
+
+  /* Typography */
+  --font-sans: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "OpenSansRegular", "Apple Color Emoji", "Segoe UI Emoji";
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  /* Shadows */
+  --shadow-1: 0 2px 10px rgba(0,0,0,0.08);
+  --shadow-2: 0 6px 20px rgba(0,0,0,0.12);
+  --shadow-brand: 0 4px 12px rgba(102, 126, 234, 0.35);
+  --shadow-success: 0 4px 12px rgba(72, 187, 120, 0.30);
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition: 200ms ease;
+
+  /* Bootstrap sync (optional) */
+  --bs-primary: var(--color-primary);
+  --bs-success: var(--color-success);
+  --bs-danger: var(--color-danger);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #101322;
+    --color-surface: #171a2b;
+    --color-surface-2: #1f2340;
+    --color-border: #2a2f4a;
+    --color-text: #e6e9ef;
+    --color-text-muted: #a8b0c3;
+
+    --shadow-1: 0 2px 10px rgba(0,0,0,0.5);
+    --shadow-2: 0 6px 20px rgba(0,0,0,0.6);
+  }
+}
+
+/* Base */
+html, body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-md);
+}
+
+/* Utilities */
+.elev-1 { box-shadow: var(--shadow-1); }
+.elev-2 { box-shadow: var(--shadow-2); }
+.card-surface {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+}
+.badge-soft {
+  background: rgba(255,255,255,0.2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-sm);
+}
+
+/* Buttons (brand) */
+.btn-primary-brand {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-2) 100%);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+.btn-primary-brand:hover { transform: translateY(-1px); box-shadow: var(--shadow-brand); }
+.btn-primary-brand:active { transform: translateY(0); }
+
+.btn-success-brand {
+  background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-2) 100%);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+.btn-success-brand:hover { transform: translateY(-1px); box-shadow: var(--shadow-success); }
+
+/* Inputs */
+.input-base {
+  width: 100%;
+  padding: 10px 14px;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  transition: border-color var(--transition), box-shadow var(--transition);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.input-base::placeholder {
+  color: color-mix(in srgb, var(--color-text-muted) 80%, transparent);
+}
+.input-base:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-primary) 20%, transparent);
+}
+
+/* Surfaces */
+.surface-panel {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+}
+
+/* Gradients helpers */
+.bg-brand-gradient { background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-2) 100%); }
+.bg-success-gradient { background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-2) 100%); }
+
+/* Focus outline for accessibility */
+:focus-visible { outline: 3px solid color-mix(in srgb, var(--color-primary) 50%, transparent); outline-offset: 2px; }
+
+/* Data table styling */
+.data-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-1);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  color: var(--color-text);
+}
+.data-table thead tr {
+  background: var(--color-surface-2);
+}
+.data-table th, .data-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+.data-table tbody tr:hover {
+  background: color-mix(in oklab, var(--color-surface-2) 60%, transparent);
+}
+.data-table tfoot tr {
+  background: var(--color-surface-2);
+}
+
+/* Improve contrast for common text helpers inside tables */
+.data-table .text-muted { color: color-mix(in srgb, var(--color-text) 70%, transparent) !important; }
+.data-table .text-success { color: var(--color-success) !important; }
+.data-table .text-danger { color: var(--color-danger) !important; }
+.data-table .text-warning { color: var(--color-warning) !important; }
+.data-table .text-primary { color: var(--color-primary) !important; }
+.data-table a { color: var(--color-primary); text-decoration: none; }
+.data-table a:hover { text-decoration: underline; }

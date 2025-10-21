@@ -1,0 +1,289 @@
+﻿@page "/usuario/editar/{id:int}"
+@using IntegraTech_POS.Services
+@using IntegraTech_POS.Models
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.AspNetCore.Components.Forms
+@inject IUsuarioService UsuarioService
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+
+<PageTitle>Editar Usuario</PageTitle>
+
+@if (!AuthService.EsAdministrador())
+{
+    <div class="container mt-5">
+        <div class="alert alert-danger">
+            <h4><i class="bi bi-shield-x"></i> Acceso Denegado</h4>
+            <p>Solo los Administradores pueden editar usuarios.</p>
+            <button class="btn btn-primary" @onclick='() => Navigation.NavigateTo("/")'>
+                Volver al Inicio
+            </button>
+        </div>
+    </div>
+}
+else
+{
+<div class="container mt-4" style="background: var(--color-bg); min-height: 100vh;">
+    <div class="row justify-content-center">
+        <div class="col-md-9 col-lg-8">
+            <div class="card card-surface elev-2">
+                <div class="card-header bg-warning text-dark border-0" style="border-radius: var(--radius-lg) var(--radius-lg) 0 0; padding: 16px 20px;">
+                    <h4 class="mb-0" style="display:flex; align-items:center; gap:8px;"><i class="bi bi-pencil-square"></i> Editar Usuario</h4>
+                </div>
+                <div class="card-body" style="padding: 20px; color: var(--color-text);">
+                    @if (cargando)
+                    {
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary"></div>
+                        </div>
+                    }
+                    else if (mensajeError != null)
+                    {
+                        <div class="alert alert-danger">@mensajeError</div>
+                    }
+                    else if (usuario == null)
+                    {
+                        <div class="alert alert-warning">No se encontrÃ³ el usuario solicitado.</div>
+                        <button class="btn btn-secondary" @onclick="Volver">Volver</button>
+                    }
+                    else
+                    {
+                        <EditForm Model="@usuario" OnValidSubmit="GuardarCambios">
+                            <DataAnnotationsValidator />
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label campo-label">Nombre de Usuario</label>
+                                    <InputText @bind-Value="usuario.NombreUsuario" class="form-control input-base" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label campo-label">Nombre Completo</label>
+                                    <InputText @bind-Value="usuario.NombreCompleto" class="form-control input-base" />
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label campo-label">Email</label>
+                                    <InputText type="email" @bind-Value="usuario.Email" class="form-control input-base" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label campo-label">Rol</label>
+                                    <InputSelect @bind-Value="usuario.Rol" class="form-select input-base">
+                                        <option value="Admin">Administrador</option>
+                                        <option value="Gerente">Gerente</option>
+                                        <option value="Cajero">Cajero</option>
+                                    </InputSelect>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <InputCheckbox @bind-Value="usuario.Activo" class="form-check-input" id="activoEditCheck" />
+                                    <label class="form-check-label campo-label" for="activoEditCheck">Usuario Activo</label>
+                                </div>
+                            </div>
+
+                            <hr />
+
+                            <div class="d-flex justify-content-between align-items-center">
+                                <button type="button" class="btn btn-secondary" @onclick="Volver">
+                                    <i class="bi bi-x-circle"></i> Cancelar
+                                </button>
+                                <button type="submit" class="btn btn-warning text-dark" disabled="@guardando">
+                                    @if (guardando)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2"></span>
+                                    }
+                                    <i class="bi bi-save"></i> Guardar Cambios
+                                </button>
+                            </div>
+                        </EditForm>
+
+                        @if (puedeCambiarPassword)
+                        {
+                            <hr />
+                            <div class="mt-3">
+                                <h5 style="display:flex; align-items:center; gap:8px;">
+                                    <i class="bi bi-key"></i> Cambiar contraseÃ±a
+                                </h5>
+
+                                @if (!string.IsNullOrEmpty(mensajePassExito))
+                                {
+                                    <div class="alert alert-success alert-dismissible">
+                                        @mensajePassExito
+                                        <button type="button" class="btn-close" @onclick="() => mensajePassExito = null"></button>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(mensajePassError))
+                                {
+                                    <div class="alert alert-danger alert-dismissible">
+                                        @mensajePassError
+                                        <button type="button" class="btn-close" @onclick="() => mensajePassError = null"></button>
+                                    </div>
+                                }
+
+                                <EditForm OnValidSubmit="CambiarPassword">
+                                    <div class="row">
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label campo-label">ContraseÃ±a actual</label>
+                                            <input type="password" class="form-control input-base" @bind="passwordActual" placeholder="Tu contraseÃ±a actual" />
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label campo-label">Nueva contraseÃ±a</label>
+                                            <input type="password" class="form-control input-base" @bind="passwordNueva" placeholder="MÃ­nimo 6 caracteres" />
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label campo-label">Confirmar contraseÃ±a</label>
+                                            <input type="password" class="form-control input-base" @bind="passwordConfirm" placeholder="Repite la nueva contraseÃ±a" />
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex justify-content-end">
+                                        <button type="submit" class="btn btn-primary" disabled="@cambiandoPass">
+                                            @if (cambiandoPass)
+                                            {
+                                                <span class="spinner-border spinner-border-sm me-2"></span>
+                                            }
+                                            <i class="bi bi-shield-lock"></i> Actualizar contraseÃ±a
+                                        </button>
+                                    </div>
+                                </EditForm>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+}
+
+@code {
+    [Parameter] public int id { get; set; }
+
+    private Usuario? usuario;
+    private bool cargando = true;
+    private string? mensajeError;
+    private bool guardando = false;
+    private bool puedeCambiarPassword = false;
+    private bool cambiandoPass = false;
+    private string passwordActual = string.Empty;
+    private string passwordNueva = string.Empty;
+    private string passwordConfirm = string.Empty;
+    private string? mensajePassExito;
+    private string? mensajePassError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AuthService.EsAdministrador())
+        {
+            Navigation.NavigateTo("/acceso-denegado");
+            return;
+        }
+
+        try
+        {
+            usuario = await UsuarioService.GetUsuarioByIdAsync(id);
+            puedeCambiarPassword = AuthService.UsuarioActual?.Id_Usuario == id;
+        }
+        catch (Exception ex)
+        {
+            mensajeError = $"Error al cargar el usuario: {ex.Message}";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private async Task GuardarCambios()
+    {
+        if (usuario == null) return;
+        guardando = true;
+        mensajeError = null;
+
+        try
+        {
+            
+            usuario.NombreUsuario = usuario.NombreUsuario?.Trim() ?? string.Empty;
+            usuario.NombreCompleto = usuario.NombreCompleto?.Trim() ?? string.Empty;
+            usuario.Email = usuario.Email?.Trim() ?? string.Empty;
+
+            var ok = await UsuarioService.UpdateUsuarioAsync(usuario);
+            if (ok)
+            {
+                Navigation.NavigateTo("/usuarios");
+            }
+            else
+            {
+                mensajeError = "No se pudieron guardar los cambios.";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensajeError = $"Error al guardar: {ex.Message}";
+        }
+        finally
+        {
+            guardando = false;
+        }
+    }
+
+    private void Volver()
+    {
+        Navigation.NavigateTo("/usuarios");
+    }
+
+    private async Task CambiarPassword()
+    {
+        if (!puedeCambiarPassword || usuario == null) return;
+        mensajePassExito = null;
+        mensajePassError = null;
+
+        
+        if (string.IsNullOrWhiteSpace(passwordActual))
+        {
+            mensajePassError = "La contraseÃ±a actual es obligatoria.";
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(passwordNueva) || passwordNueva.Length < 6)
+        {
+            mensajePassError = "La nueva contraseÃ±a debe tener al menos 6 caracteres.";
+            return;
+        }
+        if (passwordNueva != passwordConfirm)
+        {
+            mensajePassError = "La confirmaciÃ³n no coincide con la nueva contraseÃ±a.";
+            return;
+        }
+
+        try
+        {
+            cambiandoPass = true;
+            var ok = await UsuarioService.CambiarPasswordAsync(usuario.Id_Usuario, passwordActual.Trim(), passwordNueva.Trim());
+            if (ok)
+            {
+                mensajePassExito = "ContraseÃ±a actualizada exitosamente.";
+                
+                passwordActual = string.Empty;
+                passwordNueva = string.Empty;
+                passwordConfirm = string.Empty;
+            }
+            else
+            {
+                mensajePassError = "No se pudo actualizar la contraseÃ±a. Verifica la contraseÃ±a actual.";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensajePassError = $"Error al cambiar la contraseÃ±a: {ex.Message}";
+        }
+        finally
+        {
+            cambiandoPass = false;
+        }
+    }
+}
+

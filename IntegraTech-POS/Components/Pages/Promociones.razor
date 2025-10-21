@@ -1,0 +1,192 @@
+@page "/promociones"
+@using Microsoft.AspNetCore.Components
+@using IntegraTech_POS.Models
+@using IntegraTech_POS.Services
+@inject IPromocionService Promos
+@inject IProductoService Productos
+@inject AuthService Auth
+
+<PageTitle>Promociones</PageTitle>
+
+@if (!Auth.IsAuthenticated || !(Auth.EsAdministrador() || Auth.EsGerente()))
+{
+    <div class="container mt-4">
+        <div class="alert alert-warning">Acceso denegado</div>
+    </div>
+    return;
+}
+
+<div class="container mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="mb-0"><i class="bi bi-tags"></i> Promociones</h3>
+        <button class="btn btn-primary" @onclick="Nueva">Nueva promoción</button>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-6">
+            <div class="card-surface elev-1 text-white">
+                <div class="p-3 bg-brand-gradient text-white" style="border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);">
+                    <h5 class="mb-0">Listado</h5>
+                </div>
+                <div class="p-3">
+                @if (lista.Any())
+                {
+                    <table class="table table-sm align-middle text-white">
+                        <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Tipo</th>
+                            <th>Grupo</th>
+                            <th>Precio</th>
+                            <th>Activa</th>
+                            <th></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var p in lista)
+                        {
+                            <tr>
+                                <td>@p.Nombre</td>
+                                <td>@p.Tipo</td>
+                                <td>@p.CantidadGrupo</td>
+                                <td>$@p.PrecioGrupo.ToString("N2")</td>
+                                <td>
+                                    @if (p.Activa)
+                                    {<span class="badge bg-success">Sí</span>}
+                                    else
+                                    {<span class="badge bg-secondary">No</span>}
+                                </td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => Editar(p)"><i class="bi bi-pencil"></i></button>
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => Eliminar(p)"><i class="bi bi-trash"></i></button>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div class="text-white-50">Sin promociones</div>
+                }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card-surface p-3 elev-1">
+                <h5>@(form.Id==0?"Nueva promoción":"Editar promoción")</h5>
+                <div class="mb-2">
+                    <label class="form-label">Nombre</label>
+                    <input class="form-control" @bind="form.Nombre" />
+                </div>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <label class="form-label">Cantidad en grupo</label>
+                        <input type="number" class="form-control" min="1" @bind="form.CantidadGrupo" />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Precio del grupo</label>
+                        <input type="number" step="0.01" class="form-control" min="0" @bind="form.PrecioGrupo" />
+                    </div>
+                </div>
+                <div class="form-check mt-2">
+                    <input class="form-check-input" type="checkbox" id="activa" @bind="form.Activa" />
+                    <label class="form-check-label" for="activa">Activa</label>
+                </div>
+                <div class="mt-3">
+                    <label class="form-label">Productos que participan</label>
+                    <div class="border rounded p-2" style="max-height: 260px; overflow:auto;">
+                        @foreach (var pr in todosProductos)
+                        {
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="p_@pr.Id_Producto" checked="@seleccionados.Contains(pr.Id_Producto)" @onchange="(e)=>ToggleProd(pr.Id_Producto, (e.Value as bool?) == true)" />
+                                <label class="form-check-label" for="p_@pr.Id_Producto">@pr.Nombre_Producto (@pr.Codigo_Barras)</label>
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="mt-3 d-flex gap-2">
+                    <button class="btn btn-success" @onclick="Guardar">Guardar</button>
+                    <button class="btn btn-secondary" @onclick="Cancelar">Cancelar</button>
+                </div>
+                @if (!string.IsNullOrEmpty(msg))
+                {
+                    <div class="mt-2 text-info small">@msg</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<Promocion> lista = new();
+    private Promocion form = new();
+    private List<Producto> todosProductos = new();
+    private HashSet<int> seleccionados = new();
+    private string msg = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Recargar();
+    }
+
+    private async Task Recargar()
+    {
+        lista = await Promos.GetPromocionesAsync(false);
+        todosProductos = await Productos.GetProductosAsync();
+        StateHasChanged();
+    }
+
+    private void Nueva()
+    {
+        form = new Promocion { Tipo = "BundleFijo", CantidadGrupo = 2, PrecioGrupo = 25m, Activa = true };
+        seleccionados.Clear();
+    }
+
+    private async Task Editar(Promocion p)
+    {
+        form = new Promocion
+        {
+            Id = p.Id,
+            Nombre = p.Nombre,
+            Tipo = p.Tipo,
+            CantidadGrupo = p.CantidadGrupo,
+            PrecioGrupo = p.PrecioGrupo,
+            Activa = p.Activa
+        };
+        var prods = await Promos.GetProductoIdsAsync(p.Id);
+        seleccionados = new HashSet<int>(prods);
+    }
+
+    private async Task Guardar()
+    {
+        if (string.IsNullOrWhiteSpace(form.Nombre) || form.CantidadGrupo <= 0 || form.PrecioGrupo < 0)
+        {
+            msg = "Verifica los datos de la promoción";
+            return;
+        }
+        var ids = seleccionados.ToList();
+        await Promos.GuardarPromocionAsync(form, ids);
+        msg = "Guardado";
+        await Recargar();
+    }
+
+    private async Task Eliminar(Promocion p)
+    {
+        await Promos.EliminarPromocionAsync(p.Id);
+        if (form.Id == p.Id) Nueva();
+        await Recargar();
+    }
+
+    private void Cancelar()
+    {
+        Nueva();
+    }
+
+    private void ToggleProd(int id, bool check)
+    {
+        if (check) seleccionados.Add(id);
+        else seleccionados.Remove(id);
+    }
+}

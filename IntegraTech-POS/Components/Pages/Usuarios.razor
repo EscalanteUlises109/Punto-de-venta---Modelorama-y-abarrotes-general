@@ -1,0 +1,189 @@
+﻿@page "/usuarios"
+@inject IUsuarioService UsuarioService
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+
+<PageTitle>GestiÃ³n de Usuarios</PageTitle>
+
+@if (!AuthService.EsAdministrador())
+{
+    <div class="container mt-5">
+        <div class="alert alert-danger">
+            <h4><i class="bi bi-shield-x"></i> Acceso Denegado</h4>
+            <p>Solo los Administradores pueden gestionar usuarios.</p>
+            <button class="btn btn-primary" @onclick='() => Navigation.NavigateTo("/")'>
+                Volver al Inicio
+            </button>
+        </div>
+    </div>
+}
+else
+{
+<div class="container-fluid" style="background: var(--color-bg); min-height: 100vh;">
+    <div class="row mb-3 align-items-center" style="padding: 16px 8px;">
+        <div class="col">
+            <h2 class="mb-0" style="color: var(--color-text); display:flex; align-items:center; gap:8px;">
+                <i class="bi bi-people-fill" style="color: var(--color-primary);"></i>
+                GestiÃ³n de Usuarios
+            </h2>
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-success btn-success-brand" @onclick="MostrarModalNuevoUsuario">
+                <i class="bi bi-person-plus"></i> Nuevo Usuario
+            </button>
+        </div>
+    </div>
+
+    <div class="row mb-2" style="padding: 0 8px;">
+        <div class="col-auto">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="soloActivosCheck" @bind="mostrarSoloActivos" />
+                <label class="form-check-label" for="soloActivosCheck" style="color: var(--color-text);">
+                    Mostrar solo activos
+                </label>
+            </div>
+        </div>
+    </div>
+
+    @if (usuarios == null)
+    {
+        <div class="text-center">
+            <div class="spinner-border text-primary"></div>
+        </div>
+    }
+    else if (usuarios.Any())
+    {
+        <div class="table-responsive card-surface" style="padding: 8px;">
+            <table class="table table-hover align-middle" style="margin:0; color: var(--color-text);">
+                <thead>
+                    <tr style="color: var(--color-text-muted);">
+                        <th>ID</th>
+                        <th>Usuario</th>
+                        <th>Nombre Completo</th>
+                        <th>Rol</th>
+                        <th>Email</th>
+                        <th>Estado</th>
+                        <th>Ãšltimo Acceso</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var usuario in usuarios.Where(u => !mostrarSoloActivos || u.Activo))
+                    {
+                        <tr>
+                            <td>@usuario.Id_Usuario</td>
+                            <td><strong>@usuario.NombreUsuario</strong></td>
+                            <td>@usuario.NombreCompleto</td>
+                            <td>
+                                <span class="badge @GetRolBadgeClass(usuario.Rol)">
+                                    @usuario.Rol
+                                </span>
+                            </td>
+                            <td>@usuario.Email</td>
+                            <td>
+                                @if (usuario.Activo)
+                                {
+                                    <span class="badge bg-success">Activo</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">Inactivo</span>
+                                }
+                            </td>
+                            <td>
+                                @if (usuario.UltimoAcceso.HasValue)
+                                {
+                                    @usuario.UltimoAcceso.Value.ToString("dd/MM/yyyy HH:mm")
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Nunca</span>
+                                }
+                            </td>
+                            <td class="text-end" style="white-space:nowrap;">
+                                <div class="d-inline-flex align-items-center" role="group" aria-label="acciones" style="gap:8px;">
+                                    <button class="btn btn-outline-warning btn-sm" @onclick="() => EditarUsuario(usuario)" title="Editar usuario">
+                                        <i class="bi bi-pencil"></i> <span class="d-none d-sm-inline">Editar</span>
+                                    </button>
+                                    <button class="btn btn-outline-danger btn-sm" @onclick="() => EliminarUsuario(usuario.Id_Usuario)" title="Eliminar usuario">
+                                        <i class="bi bi-trash"></i> <span class="d-none d-sm-inline">Quitar usuario</span>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">
+            No hay usuarios registrados.
+        </div>
+    }
+</div>
+
+@code {
+    private List<Usuario>? usuarios;
+    private bool mostrarSoloActivos = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarUsuarios();
+    }
+
+    private async Task CargarUsuarios()
+    {
+        usuarios = await UsuarioService.GetUsuariosAsync();
+    }
+
+    private string GetRolBadgeClass(string rol)
+    {
+        return rol switch
+        {
+            "Admin" => "bg-danger",
+            "Gerente" => "bg-warning text-dark",
+            "Cajero" => "bg-info text-dark",
+            _ => "bg-secondary"
+        };
+    }
+
+    private void MostrarModalNuevoUsuario()
+    {
+        
+        Navigation.NavigateTo("/usuario/nuevo");
+    }
+
+    private void EditarUsuario(Usuario usuario)
+    {
+        
+        Navigation.NavigateTo($"/usuario/editar/{usuario.Id_Usuario}");
+    }
+
+    private async Task EliminarUsuario(int id)
+    {
+        var confirmado = await JSRuntime.InvokeAsync<bool>("confirm", "Â¿EstÃ¡ seguro de eliminar este usuario? Esta acciÃ³n no se puede deshacer.");
+        
+        if (confirmado)
+        {
+            var resultado = await UsuarioService.DeleteUsuarioAsync(id);
+            if (resultado)
+            {
+                await CargarUsuarios();
+            }
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        
+        if (!AuthService.EsAdministrador())
+        {
+            Navigation.NavigateTo("/acceso-denegado");
+        }
+    }
+}
+}
+

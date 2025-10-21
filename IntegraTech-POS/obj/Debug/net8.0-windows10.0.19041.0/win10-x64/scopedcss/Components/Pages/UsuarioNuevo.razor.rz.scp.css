@@ -1,0 +1,22 @@
+
+
+.campo-label[b-hgbvj09t6v] {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+
+input.form-control.input-base[b-hgbvj09t6v],
+select.form-select.input-base[b-hgbvj09t6v] {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+
+.card.card-surface .card-body[b-hgbvj09t6v] {
+  padding: 20px;
+}
+
+
+.btn + .btn[b-hgbvj09t6v] { margin-left: 8px; }
+

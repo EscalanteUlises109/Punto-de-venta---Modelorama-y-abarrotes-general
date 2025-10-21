@@ -1,0 +1,211 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build IntegraTech-POS",
+			"type": "shell",
+			"command": "dotnet build \"c:\\Users\\kueh5\\source\\repos\\IntegraTech-POS\\IntegraTech-POS.sln\" -c Debug",
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "build"
+		},
+		{
+			"label": "build-maui",
+			"type": "shell",
+			"command": "dotnet build IntegraTech-POS.sln -c Debug",
+			"isBackground": false,
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "build"
+		},
+		{
+			"label": "build-maui",
+			"type": "shell",
+			"command": "dotnet build IntegraTech-POS.sln -c Debug",
+			"isBackground": false,
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "build"
+		},
+		{
+			"label": "build-maui",
+			"type": "shell",
+			"command": "dotnet build IntegraTech-POS.sln -c Debug",
+			"isBackground": false,
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "build"
+		},
+		{
+			"label": "build-maui",
+			"type": "shell",
+			"command": "dotnet build IntegraTech-POS.sln -c Debug",
+			"isBackground": false,
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "build"
+		},
+		{
+			"label": "build-maui",
+			"type": "shell",
+			"command": "dotnet build IntegraTech-POS.sln -c Debug",
+			"isBackground": false,
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "build"
+		},
+		{
+			"label": "build-maui",
+			"type": "shell",
+			"command": "dotnet build IntegraTech-POS.sln -c Debug",
+			"isBackground": false,
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "build"
+		},
+		{
+			"label": "build-maui",
+			"type": "shell",
+			"command": "dotnet build IntegraTech-POS.sln -c Debug",
+			"isBackground": false,
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "build"
+		},
+		{
+			"label": "build-maui",
+			"type": "shell",
+			"command": "dotnet build IntegraTech-POS.sln -c Debug",
+			"isBackground": false,
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "build"
+		},
+		{
+			"label": "dotnet build IntegraTech-POS",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"c:\\Users\\kueh5\\source\\repos\\IntegraTech-POS\\IntegraTech-POS.sln",
+				"-c",
+				"Debug"
+			],
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "build"
+		},
+		{
+			"label": "build-windows",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"c:\\Users\\kueh5\\source\\repos\\IntegraTech-POS\\IntegraTech-POS\\IntegraTech-POS.csproj",
+				"-c",
+				"Debug",
+				"-f",
+				"net8.0-windows10.0.19041.0"
+			],
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "build"
+		},
+		{
+			"label": "build-windows-2",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"c:\\Users\\kueh5\\source\\repos\\IntegraTech-POS\\IntegraTech-POS\\IntegraTech-POS.csproj",
+				"-c",
+				"Debug",
+				"-f",
+				"net8.0-windows10.0.19041.0"
+			],
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "build"
+		},
+		{
+			"label": "build-windows-3",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"c:\\Users\\kueh5\\source\\repos\\IntegraTech-POS\\IntegraTech-POS\\IntegraTech-POS.csproj",
+				"-c",
+				"Debug",
+				"-f",
+				"net8.0-windows10.0.19041.0"
+			],
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "build"
+		},
+		{
+			"label": "build-windows-iva",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"c:\\Users\\kueh5\\source\\repos\\IntegraTech-POS\\IntegraTech-POS\\IntegraTech-POS.csproj",
+				"-c",
+				"Debug",
+				"-f",
+				"net8.0-windows10.0.19041.0"
+			],
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "build"
+		},
+		{
+			"label": "build-windows-ticket-iva",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"c:\\Users\\kueh5\\source\\repos\\IntegraTech-POS\\IntegraTech-POS\\IntegraTech-POS.csproj",
+				"-c",
+				"Debug",
+				"-f",
+				"net8.0-windows10.0.19041.0"
+			],
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "build"
+		},
+		{
+			"label": "build-windows-cart-buttons",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"c:\\Users\\kueh5\\source\\repos\\IntegraTech-POS\\IntegraTech-POS\\IntegraTech-POS.csproj",
+				"-c",
+				"Debug",
+				"-f",
+				"net8.0-windows10.0.19041.0"
+			],
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "build"
+		}
+	]
+}

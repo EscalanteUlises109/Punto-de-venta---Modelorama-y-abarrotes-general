@@ -1,0 +1,1 @@
+c:\Users\kueh5\source\repos\IntegraTech-POS\IntegraTech-POS\IntegraTech-POS.csproj;x64

@@ -1,0 +1,165 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\kueh5\\source\\repos\\IntegraTech-POS\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{FDE8A71D-4D06-4B83-A838-FA76118C590C}|IntegraTech-POS\\IntegraTech-POS.csproj|c:\\users\\kueh5\\source\\repos\\integratech-pos\\integratech-pos\\models\\gananciaproducto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{FDE8A71D-4D06-4B83-A838-FA76118C590C}|IntegraTech-POS\\IntegraTech-POS.csproj|solutionrelative:integratech-pos\\models\\gananciaproducto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FDE8A71D-4D06-4B83-A838-FA76118C590C}|IntegraTech-POS\\IntegraTech-POS.csproj|c:\\users\\kueh5\\source\\repos\\integratech-pos\\integratech-pos\\models\\producto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{FDE8A71D-4D06-4B83-A838-FA76118C590C}|IntegraTech-POS\\IntegraTech-POS.csproj|solutionrelative:integratech-pos\\models\\producto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FDE8A71D-4D06-4B83-A838-FA76118C590C}|IntegraTech-POS\\IntegraTech-POS.csproj|c:\\users\\kueh5\\source\\repos\\integratech-pos\\integratech-pos\\services\\databaseservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{FDE8A71D-4D06-4B83-A838-FA76118C590C}|IntegraTech-POS\\IntegraTech-POS.csproj|solutionrelative:integratech-pos\\services\\databaseservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FDE8A71D-4D06-4B83-A838-FA76118C590C}|IntegraTech-POS\\IntegraTech-POS.csproj|c:\\users\\kueh5\\source\\repos\\integratech-pos\\integratech-pos\\components\\pages\\reportes.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{FDE8A71D-4D06-4B83-A838-FA76118C590C}|IntegraTech-POS\\IntegraTech-POS.csproj|solutionrelative:integratech-pos\\components\\pages\\reportes.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FDE8A71D-4D06-4B83-A838-FA76118C590C}|IntegraTech-POS\\IntegraTech-POS.csproj|c:\\users\\kueh5\\source\\repos\\integratech-pos\\integratech-pos\\models\\gananciacategoria.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{FDE8A71D-4D06-4B83-A838-FA76118C590C}|IntegraTech-POS\\IntegraTech-POS.csproj|solutionrelative:integratech-pos\\models\\gananciacategoria.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FDE8A71D-4D06-4B83-A838-FA76118C590C}|IntegraTech-POS\\IntegraTech-POS.csproj|c:\\users\\kueh5\\source\\repos\\integratech-pos\\integratech-pos\\services\\iproductoservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{FDE8A71D-4D06-4B83-A838-FA76118C590C}|IntegraTech-POS\\IntegraTech-POS.csproj|solutionrelative:integratech-pos\\services\\iproductoservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FDE8A71D-4D06-4B83-A838-FA76118C590C}|IntegraTech-POS\\IntegraTech-POS.csproj|c:\\users\\kueh5\\source\\repos\\integratech-pos\\integratech-pos\\services\\productoservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{FDE8A71D-4D06-4B83-A838-FA76118C590C}|IntegraTech-POS\\IntegraTech-POS.csproj|solutionrelative:integratech-pos\\services\\productoservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FDE8A71D-4D06-4B83-A838-FA76118C590C}|IntegraTech-POS\\IntegraTech-POS.csproj|c:\\users\\kueh5\\source\\repos\\integratech-pos\\integratech-pos\\mauiprogram.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{FDE8A71D-4D06-4B83-A838-FA76118C590C}|IntegraTech-POS\\IntegraTech-POS.csproj|solutionrelative:integratech-pos\\mauiprogram.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FDE8A71D-4D06-4B83-A838-FA76118C590C}|IntegraTech-POS\\IntegraTech-POS.csproj|c:\\users\\kueh5\\source\\repos\\integratech-pos\\integratech-pos\\components\\pages\\productos.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{FDE8A71D-4D06-4B83-A838-FA76118C590C}|IntegraTech-POS\\IntegraTech-POS.csproj|solutionrelative:integratech-pos\\components\\pages\\productos.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "GananciaProducto.cs",
+              "DocumentMoniker": "C:\\Users\\kueh5\\source\\repos\\IntegraTech-POS\\IntegraTech-POS\\Models\\GananciaProducto.cs",
+              "RelativeDocumentMoniker": "IntegraTech-POS\\Models\\GananciaProducto.cs",
+              "ToolTip": "C:\\Users\\kueh5\\source\\repos\\IntegraTech-POS\\IntegraTech-POS\\Models\\GananciaProducto.cs",
+              "RelativeToolTip": "IntegraTech-POS\\Models\\GananciaProducto.cs",
+              "ViewState": "AgIAABMAAAAAAAAAAAAAABMAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-27T21:46:57.726Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "GananciaCategoria.cs",
+              "DocumentMoniker": "C:\\Users\\kueh5\\source\\repos\\IntegraTech-POS\\IntegraTech-POS\\Models\\GananciaCategoria.cs",
+              "RelativeDocumentMoniker": "IntegraTech-POS\\Models\\GananciaCategoria.cs",
+              "ToolTip": "C:\\Users\\kueh5\\source\\repos\\IntegraTech-POS\\IntegraTech-POS\\Models\\GananciaCategoria.cs",
+              "RelativeToolTip": "IntegraTech-POS\\Models\\GananciaCategoria.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA0AAAALAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-27T21:47:58.778Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Reportes.razor",
+              "DocumentMoniker": "C:\\Users\\kueh5\\source\\repos\\IntegraTech-POS\\IntegraTech-POS\\Components\\Pages\\Reportes.razor",
+              "RelativeDocumentMoniker": "IntegraTech-POS\\Components\\Pages\\Reportes.razor",
+              "ToolTip": "C:\\Users\\kueh5\\source\\repos\\IntegraTech-POS\\IntegraTech-POS\\Components\\Pages\\Reportes.razor",
+              "RelativeToolTip": "IntegraTech-POS\\Components\\Pages\\Reportes.razor",
+              "ViewState": "AgIAAAMBAAAAAAAAAAAjwBQBAAAyAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-09-27T21:48:33.032Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Producto.cs",
+              "DocumentMoniker": "C:\\Users\\kueh5\\source\\repos\\IntegraTech-POS\\IntegraTech-POS\\Models\\Producto.cs",
+              "RelativeDocumentMoniker": "IntegraTech-POS\\Models\\Producto.cs",
+              "ToolTip": "C:\\Users\\kueh5\\source\\repos\\IntegraTech-POS\\IntegraTech-POS\\Models\\Producto.cs",
+              "RelativeToolTip": "IntegraTech-POS\\Models\\Producto.cs",
+              "ViewState": "AgIAABwAAAAAAAAAAADwvwYAAAAZAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-26T19:17:40.486Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "DatabaseService.cs",
+              "DocumentMoniker": "C:\\Users\\kueh5\\source\\repos\\IntegraTech-POS\\IntegraTech-POS\\Services\\DatabaseService.cs",
+              "RelativeDocumentMoniker": "IntegraTech-POS\\Services\\DatabaseService.cs",
+              "ToolTip": "C:\\Users\\kueh5\\source\\repos\\IntegraTech-POS\\IntegraTech-POS\\Services\\DatabaseService.cs",
+              "RelativeToolTip": "IntegraTech-POS\\Services\\DatabaseService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAG8AAAARAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-27T18:45:32.246Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "Productos.razor",
+              "DocumentMoniker": "C:\\Users\\kueh5\\source\\repos\\IntegraTech-POS\\IntegraTech-POS\\Components\\Pages\\Productos.razor",
+              "RelativeDocumentMoniker": "IntegraTech-POS\\Components\\Pages\\Productos.razor",
+              "ToolTip": "C:\\Users\\kueh5\\source\\repos\\IntegraTech-POS\\IntegraTech-POS\\Components\\Pages\\Productos.razor",
+              "RelativeToolTip": "IntegraTech-POS\\Components\\Pages\\Productos.razor",
+              "ViewState": "AgIAADkAAAAAAAAAAAAswG0AAAAkAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-09-26T20:39:19.704Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "ProductoService.cs",
+              "DocumentMoniker": "C:\\Users\\kueh5\\source\\repos\\IntegraTech-POS\\IntegraTech-POS\\Services\\ProductoService.cs",
+              "RelativeDocumentMoniker": "IntegraTech-POS\\Services\\ProductoService.cs",
+              "ToolTip": "C:\\Users\\kueh5\\source\\repos\\IntegraTech-POS\\IntegraTech-POS\\Services\\ProductoService.cs",
+              "RelativeToolTip": "IntegraTech-POS\\Services\\ProductoService.cs",
+              "ViewState": "AgIAAFsAAAAAAAAAAAAAAFsAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-26T19:22:58.911Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "IProductoService.cs",
+              "DocumentMoniker": "C:\\Users\\kueh5\\source\\repos\\IntegraTech-POS\\IntegraTech-POS\\Services\\IProductoService.cs",
+              "RelativeDocumentMoniker": "IntegraTech-POS\\Services\\IProductoService.cs",
+              "ToolTip": "C:\\Users\\kueh5\\source\\repos\\IntegraTech-POS\\IntegraTech-POS\\Services\\IProductoService.cs",
+              "RelativeToolTip": "IntegraTech-POS\\Services\\IProductoService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAAA1AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-26T19:18:20.082Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "MauiProgram.cs",
+              "DocumentMoniker": "C:\\Users\\kueh5\\source\\repos\\IntegraTech-POS\\IntegraTech-POS\\MauiProgram.cs",
+              "RelativeDocumentMoniker": "IntegraTech-POS\\MauiProgram.cs",
+              "ToolTip": "C:\\Users\\kueh5\\source\\repos\\IntegraTech-POS\\IntegraTech-POS\\MauiProgram.cs",
+              "RelativeToolTip": "IntegraTech-POS\\MauiProgram.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAB8AAAAjAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-26T19:11:17.468Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

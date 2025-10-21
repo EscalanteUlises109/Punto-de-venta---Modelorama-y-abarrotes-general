@@ -1,0 +1,89 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>IntegraTech-POS</name>
+    </assembly>
+    <members>
+        <member name="M:IntegraTech_POS.Helpers.SecurityHelper.HashPassword(System.String)">
+            <summary>
+            Hash de contraseña usando SHA256 (para simplicidad, en producción usar BCrypt)
+            IMPORTANTE: Elimina espacios en blanco antes de hashear
+            </summary>
+        </member>
+        <member name="M:IntegraTech_POS.Helpers.SecurityHelper.VerifyPassword(System.String,System.String)">
+            <summary>
+            Verifica si la contraseña coincide con el hash
+            </summary>
+        </member>
+        <member name="M:IntegraTech_POS.Helpers.SecurityHelper.GenerateRandomPassword(System.Int32)">
+            <summary>
+            Genera una contraseña aleatoria
+            </summary>
+        </member>
+        <member name="T:IntegraTech_POS.Services.AuthService">
+            <summary>
+            Servicio para gestionar la sesión del usuario actual
+            </summary>
+        </member>
+        <member name="M:IntegraTech_POS.Services.AuthService.SetUsuario(IntegraTech_POS.Models.Usuario)">
+            <summary>
+            Establece el usuario actual después del login
+            </summary>
+        </member>
+        <member name="M:IntegraTech_POS.Services.AuthService.Logout">
+            <summary>
+            Cierra la sesión del usuario actual
+            </summary>
+        </member>
+        <member name="M:IntegraTech_POS.Services.AuthService.TieneRol(System.String)">
+            <summary>
+            Verifica si el usuario actual tiene un rol específico
+            </summary>
+        </member>
+        <member name="M:IntegraTech_POS.Services.AuthService.EsAdministrador">
+            <summary>
+            Verifica si el usuario actual es administrador
+            </summary>
+        </member>
+        <member name="M:IntegraTech_POS.Services.AuthService.EsGerente">
+            <summary>
+            Verifica si el usuario actual es gerente
+            </summary>
+        </member>
+        <member name="M:IntegraTech_POS.Services.AuthService.EsCajero">
+            <summary>
+            Verifica si el usuario actual es cajero
+            </summary>
+        </member>
+        <member name="M:IntegraTech_POS.Services.AuthService.TieneAccesoAPagina(System.String)">
+            <summary>
+            Verifica si el usuario tiene permiso para acceder a una página
+            </summary>
+        </member>
+        <member name="M:IntegraTech_POS.Services.AuthService.PuedeRealizarAccion(System.String)">
+            <summary>
+            Verifica si el usuario puede realizar una acción específica
+            </summary>
+        </member>
+        <member name="M:IntegraTech_POS.Services.DatabaseService.ResetearPasswordAdminAsync">
+            <summary>
+            Resetea la contraseña del usuario admin (útil para debugging)
+            </summary>
+        </member>
+        <member name="M:IntegraTech_POS.Services.DatabaseService.EliminarYRecrearBaseDeDatosAsync">
+            <summary>
+            Elimina completamente la base de datos y la vuelve a crear desde cero
+            </summary>
+        </member>
+        <member name="M:IntegraTech_POS.Services.DatabaseService.DiagnosticarUsuarioAdminAsync">
+            <summary>
+            Diagnóstico completo del usuario admin
+            </summary>
+        </member>
+        <member name="M:IntegraTech_POS.Services.DatabaseService.GuardarVentaConTransaccionAsync(IntegraTech_POS.Models.Venta,System.Collections.Generic.List{IntegraTech_POS.Models.DetalleVenta},System.Int32)">
+            <summary>
+            Guarda una venta con transacción atómica para garantizar consistencia de datos
+            </summary>
+        </member>
+    </members>
+</doc>

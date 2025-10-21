@@ -1,0 +1,68 @@
+@page "/acceso-denegado"
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+
+<PageTitle>Acceso Denegado</PageTitle>
+
+<div class="container">
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-6">
+            <div class="card-surface elev-1">
+                <div class="p-4 bg-brand-gradient text-white" style="border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);">
+                    <div class="text-center">
+                        <i class="bi bi-shield-x" style="font-size: 3rem;"></i>
+                        <h2 class="mt-2 mb-0">Acceso Denegado</h2>
+                    </div>
+                </div>
+                <div class="p-5 text-center">
+                    <p class="text-muted mt-2">
+                        No tienes los permisos necesarios para acceder a esta página.
+                    </p>
+                    <p class="text-muted mt-3">
+                        No tienes los permisos necesarios para acceder a esta página.
+                    </p>
+
+                    @if (AuthService.IsAuthenticated)
+                    {
+                        <div class="alert alert-info mt-4 elev-1">
+                            <strong>Usuario:</strong> @AuthService.UsuarioActual?.NombreCompleto<br>
+                            <strong>Rol:</strong> <span class="badge bg-primary">@AuthService.RolActual</span>
+                        </div>
+
+                        <p class="text-muted small">
+                            @if (AuthService.EsCajero())
+                            {
+                                <text>Como <strong>Cajero</strong>, solo tienes acceso a Ventas y Reportes.</text>
+                            }
+                            else if (AuthService.EsGerente())
+                            {
+                                <text>Como <strong>Gerente</strong>, tienes acceso a la mayoría de funciones excepto gestión de usuarios.</text>
+                            }
+                        </p>
+                    }
+
+                    <div class="mt-4">
+                        <button class="btn btn-primary-brand me-2" @onclick="VolverInicio">
+                            <i class="bi bi-house"></i> Volver al Inicio
+                        </button>
+                        <button class="btn btn-outline-secondary" @onclick="VolverAtras">
+                            <i class="bi bi-arrow-left"></i> Volver Atrás
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private void VolverInicio()
+    {
+        Navigation.NavigateTo("/");
+    }
+
+    private void VolverAtras()
+    {
+        Navigation.NavigateTo("/");
+    }
+}

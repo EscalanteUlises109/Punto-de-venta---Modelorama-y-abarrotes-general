@@ -1,0 +1,299 @@
+@page "/producto/editar/{Id:int}"
+@using IntegraTech_POS.Models
+@using IntegraTech_POS.Services
+@using Microsoft.AspNetCore.Components.Web
+@inject IProductoService ProductoService
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+@inject BarcodeScannerService BarcodeScanner
+@implements IDisposable
+
+<PageTitle>Editar Producto</PageTitle>
+
+@if (!AuthService.IsAuthenticated)
+{
+    Navigation.NavigateTo("/login");
+    return;
+}
+@if (!AuthService.EsAdministrador() && !AuthService.EsGerente())
+{
+    Navigation.NavigateTo("/acceso-denegado");
+    return;
+}
+
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/productos">Productos</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Editar</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
+    }
+    else if (producto != null)
+    {
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card-surface">
+                    <div class="p-3 bg-brand-gradient text-white" style="border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);">
+                        <h3 class="mb-0">Editar Producto</h3>
+                    </div>
+                    <div class="p-3">
+                        @if (!string.IsNullOrEmpty(errorMessage))
+                        {
+                            <div class="alert alert-danger alert-dismissible fade show elev-1">
+                                <i class="bi bi-exclamation-triangle"></i> @errorMessage
+                                <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+                            </div>
+                        }
+                        <EditForm Model="producto" OnValidSubmit="GuardarProducto">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary class="text-danger" />
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Nombre del Producto:</label>
+                                        <InputText class="input-base" @bind-Value="producto.Nombre_Producto" />
+                                        <ValidationMessage For="@(() => producto.Nombre_Producto)" />
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Código de Barras:</label>
+                                        <InputText class="input-base" @bind-Value="producto.Codigo_Barras" />
+                                        <ValidationMessage For="@(() => producto.Codigo_Barras)" />
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Precio de Venta:</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">$</span>
+                                            <InputNumber class="input-base" @bind-Value="producto.Precio_Venta" step="0.01" />
+                                        </div>
+                                        <ValidationMessage For="@(() => producto.Precio_Venta)" />
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Precio de Compra:</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">$</span>
+                                            <InputNumber class="input-base" @bind-Value="producto.Precio_Compra" step="0.01" />
+                                        </div>
+                                        <ValidationMessage For="@(() => producto.Precio_Compra)" />
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Categoría:</label>
+                                        <InputText class="input-base" @bind-Value="producto.Categoria" />
+                                        <ValidationMessage For="@(() => producto.Categoria)" />
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Distribuidor:</label>
+                                        <InputText class="input-base" @bind-Value="producto.Distribuidor" />
+                                        <ValidationMessage For="@(() => producto.Distribuidor)" />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Cantidad en Stock:</label>
+                                        <InputNumber class="input-base" @bind-Value="producto.Cantidad" />
+                                        <ValidationMessage For="@(() => producto.Cantidad)" />
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Unidad de Medida:</label>
+                                        <InputText class="input-base" @bind-Value="producto.Unidad_Medida" placeholder="Ej: pza, kg, L, ml" />
+                                        <ValidationMessage For="@(() => producto.Unidad_Medida)" />
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Stock Mínimo:</label>
+                                        <InputNumber class="input-base" @bind-Value="producto.Stock_Minimo" />
+                                        <ValidationMessage For="@(() => producto.Stock_Minimo)" />
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Fecha de Vencimiento:</label>
+                                        <InputDate class="input-base" @bind-Value="producto.Fecha_Vencimiento" />
+                                        <ValidationMessage For="@(() => producto.Fecha_Vencimiento)" />
+                                        <small class="form-text text-muted">Opcional - Solo para productos perecederos</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-12">
+                                    <SelectorImagen Label="Imagen del Producto" 
+                                                  RutaImagenActual="@producto.ImagenPath" 
+                                                  OnImagenCambiada="OnImagenCambiada" />
+                                </div>
+                            </div>
+
+                            <div class="mt-3">
+                                <button type="submit" class="btn btn-primary-brand" disabled="@isSaving">
+                                    @if (isSaving)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                    }
+                                    <i class="fas fa-save"></i> Guardar Cambios
+                                </button>
+                                <button type="button" class="btn btn-secondary ms-2" @onclick="Cancelar">
+                                    <i class="fas fa-times"></i> Cancelar
+                                </button>
+                            </div>
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card-surface">
+                    <div class="p-3 bg-brand-gradient text-white" style="border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);">
+                        <h5 class="mb-0">Vista Previa</h5>
+                    </div>
+                    <div class="p-3">
+                        <div class="text-center mb-3">
+                            <ImagenProducto RutaImagen="@producto.ImagenPath" 
+                                          CssClass="img-thumbnail" 
+                                          Style="max-width: 200px; max-height: 200px;" />
+                        </div>
+                        <h6>@producto.Nombre_Producto</h6>
+                        <p class="text-muted mb-1">
+                            <strong>Precio: </strong>$@producto.Precio_Venta.ToString("N2")
+                        </p>
+                        @if (!string.IsNullOrWhiteSpace(producto.Categoria))
+                        {
+                            <p class="text-muted mb-1">
+                                <strong>Categoría: </strong>@producto.Categoria
+                            </p>
+                        }
+                        @if (producto.Cantidad > 0)
+                        {
+                            <p class="text-muted mb-1">
+                                <strong>Stock: </strong>@producto.Cantidad unidades
+                            </p>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(producto.Codigo_Barras))
+                        {
+                            <p class="text-muted mb-1">
+                                <strong>Código: </strong>@producto.Codigo_Barras
+                            </p>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning elev-1">
+            <h4>Producto no encontrado</h4>
+            <p>El producto solicitado no existe o ha sido eliminado.</p>
+            <button class="btn btn-primary" @onclick="Volver">Volver a Productos</button>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    
+    private Producto? producto;
+    private bool isLoading = true;
+    private bool isSaving = false;
+    private string? errorMessage = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarProducto();
+        BarcodeScanner.OnBarcodeScanned += OnBarcodeScanned;
+    }
+
+    private void OnBarcodeScanned(string barcode)
+    {
+        if (producto != null)
+        {
+            producto.Codigo_Barras = barcode;
+            InvokeAsync(() =>
+            {
+                StateHasChanged();
+                Console.WriteLine($"✅ Código de barras actualizado: {barcode}");
+            });
+        }
+    }
+
+    private void OnImagenCambiada(string? nuevaRuta)
+    {
+        if (producto != null)
+        {
+            producto.ImagenPath = nuevaRuta ?? string.Empty;
+            Console.WriteLine($"📷 Imagen del producto actualizada: {nuevaRuta ?? "Sin imagen"}");
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarProducto()
+    {
+        isLoading = true;
+        producto = await ProductoService.GetProductoByIdAsync(Id);
+        isLoading = false;
+    }
+
+    private async Task GuardarProducto()
+    {
+        if (producto == null) return;
+
+        isSaving = true;
+        errorMessage = null;
+        
+        try
+        {
+            var success = await ProductoService.UpdateProductoAsync(producto);
+
+            if (success)
+            {
+                Navigation.NavigateTo("/productos");
+            }
+            else
+            {
+                errorMessage = "Error al actualizar el producto. Por favor, intente nuevamente.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error inesperado: {ex.Message}";
+            Console.WriteLine($"Error al guardar el producto: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private void Cancelar()
+    {
+        Navigation.NavigateTo("/productos");
+    }
+
+    private void Volver()
+    {
+        Navigation.NavigateTo("/productos");
+    }
+
+    public void Dispose()
+    {
+        BarcodeScanner.OnBarcodeScanned -= OnBarcodeScanned;
+    }
+}

@@ -1,0 +1,172 @@
+@page "/producto/{Id:int}"
+@using IntegraTech_POS.Models
+@using IntegraTech_POS.Services
+@using Microsoft.AspNetCore.Components.Web
+@inject IProductoService ProductoService
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Detalle del Producto</PageTitle>
+
+@if (!AuthService.IsAuthenticated)
+{
+    Navigation.NavigateTo("/login");
+    return;
+}
+@if (!AuthService.EsAdministrador() && !AuthService.EsGerente())
+{
+    Navigation.NavigateTo("/acceso-denegado");
+    return;
+}
+
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/productos">Productos</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Detalle</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
+    }
+    else if (producto != null)
+    {
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card-surface">
+                    <div class="p-3 bg-brand-gradient text-white" style="border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);">
+                        <h3 class="mb-0">@producto.Nombre_Producto</h3>
+                    </div>
+                    <div class="p-3">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <dl class="row">
+                                    <dt class="col-sm-4 label-blueblack">ID:</dt>
+                                    <dd class="col-sm-8">@producto.Id_Producto</dd>
+                                    
+                                    <dt class="col-sm-4 label-blueblack">Nombre:</dt>
+                                    <dd class="col-sm-8">@producto.Nombre_Producto</dd>
+                                    
+                                    <dt class="col-sm-4 label-blueblack">Código de Barras:</dt>
+                                    <dd class="col-sm-8">@producto.Codigo_Barras</dd>
+                                    
+                                    <dt class="col-sm-4 label-blueblack">Categoría:</dt>
+                                    <dd class="col-sm-8">@producto.Categoria</dd>
+                                    
+                                    <dt class="col-sm-4 label-blueblack">Distribuidor:</dt>
+                                    <dd class="col-sm-8">@producto.Distribuidor</dd>
+                                </dl>
+                            </div>
+                            <div class="col-md-6">
+                                <dl class="row">
+                                    <dt class="col-sm-4 label-blueblack">Precio Venta:</dt>
+                                    <dd class="col-sm-8">$@producto.Precio_Venta.ToString("N2")</dd>
+                                    
+                                    <dt class="col-sm-4 label-blueblack">Precio Compra:</dt>
+                                    <dd class="col-sm-8">$@producto.Precio_Compra.ToString("N2")</dd>
+                                    
+                                    <dt class="col-sm-4 label-blueblack">Stock Actual:</dt>
+                                    <dd class="col-sm-8">
+                                        <span class="badge @(producto.Cantidad <= producto.Stock_Minimo ? "bg-danger" : "bg-success")">
+                                            @producto.Cantidad @producto.Unidad_Medida
+                                        </span>
+                                    </dd>
+                                    
+                                    <dt class="col-sm-4 label-blueblack">Stock Mínimo:</dt>
+                                    <dd class="col-sm-8">@producto.Stock_Minimo @producto.Unidad_Medida</dd>
+                                    
+                                    <dt class="col-sm-4 label-blueblack">Fecha Registro:</dt>
+                                    <dd class="col-sm-8">@producto.Fecha_Registro.ToString("dd/MM/yyyy")</dd>
+                                    
+                                    @if (producto.Fecha_Vencimiento.HasValue)
+                                    {
+                                        <dt class="col-sm-4 label-blueblack">Vencimiento:</dt>
+                                        <dd class="col-sm-8">
+                                            <span class="@(producto.Fecha_Vencimiento.Value < DateTime.Now.AddDays(7) ? "text-danger" : "")">
+                                                @producto.Fecha_Vencimiento.Value.ToString("dd/MM/yyyy")
+                                            </span>
+                                        </dd>
+                                    }
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-3">
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-secondary" @onclick="Volver">
+                                <i class="fas fa-arrow-left"></i> Volver
+                            </button>
+                            <button class="btn btn-primary-brand" @onclick="Editar">
+                                <i class="fas fa-edit"></i> Editar
+                            </button>
+                            <button class="btn btn-outline-danger" @onclick="Eliminar">
+                                <i class="fas fa-trash"></i> Eliminar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning">
+            <h4>Producto no encontrado</h4>
+            <p>El producto solicitado no existe o ha sido eliminado.</p>
+            <button class="btn btn-primary" @onclick="Volver">Volver a Productos</button>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    
+    private Producto? producto;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarProducto();
+    }
+
+    private async Task CargarProducto()
+    {
+        isLoading = true;
+        producto = await ProductoService.GetProductoByIdAsync(Id);
+        isLoading = false;
+    }
+
+    private void Volver()
+    {
+        Navigation.NavigateTo("/productos");
+    }
+
+    private void Editar()
+    {
+        Navigation.NavigateTo($"/producto/editar/{Id}");
+    }
+
+    private async Task Eliminar()
+    {
+        var confirmado = await JSRuntime.InvokeAsync<bool>(
+            "confirm", 
+            $"¿Está seguro de eliminar el producto '{producto?.Nombre_Producto}'? Esta acción no se puede deshacer."
+        );
+        
+        if (confirmado && await ProductoService.DeleteProductoAsync(Id))
+        {
+            Navigation.NavigateTo("/productos");
+        }
+    }
+}

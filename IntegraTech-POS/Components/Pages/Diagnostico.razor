@@ -1,0 +1,148 @@
+﻿@page "/diagnostico"
+@using IntegraTech_POS.Services
+@inject DatabaseService DatabaseService
+@inject IUsuarioService UsuarioService
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+
+@if (!AuthService.IsAuthenticated)
+{
+    Navigation.NavigateTo("/login");
+    return;
+}
+@if (!AuthService.EsAdministrador())
+{
+    Navigation.NavigateTo("/acceso-denegado");
+    return;
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card-surface">
+                <div class="p-4 bg-brand-gradient text-white" style="border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);">
+                    <h4 class="mb-0">ðŸ” DiagnÃ³stico del Sistema</h4>
+                </div>
+                <div class="p-4">
+                    <div class="alert alert-info elev-1">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Esta pÃ¡gina te ayuda a diagnosticar problemas de autenticaciÃ³n.
+                    </div>
+
+                    <div class="mb-3">
+                        <button class="btn btn-primary-brand me-2" @onclick="DiagnosticarAdmin">
+                            <i class="bi bi-search me-2"></i>
+                            Diagnosticar Usuario Admin
+                        </button>
+
+                        <button class="btn btn-warning me-2" @onclick="ResetearPasswordAdmin">
+                            <i class="bi bi-arrow-clockwise me-2"></i>
+                            Resetear ContraseÃ±a Admin
+                        </button>
+
+                        <button class="btn btn-info" @onclick="ProbarLogin">
+                            <i class="bi bi-key me-2"></i>
+                            Probar Login (credenciales por defecto)
+                        </button>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(resultado))
+                    {
+                        <div class="card-surface mt-3">
+                            <div class="p-3 bg-brand-gradient text-white" style="border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);">
+                                <strong>Resultado</strong>
+                            </div>
+                            <div class="p-3">
+                                <pre style="white-space: pre-wrap; font-family: 'Courier New', monospace; background: var(--color-surface-2); padding: 15px; border-radius: var(--radius-md);">@resultado</pre>
+                            </div>
+                        </div>
+                    }
+
+                    <div class="mt-4">
+                        <h5>ðŸ“‹ InformaciÃ³n del DiagnÃ³stico:</h5>
+                        <ul>
+                            <li><strong>Diagnosticar Usuario Admin:</strong> Verifica si el usuario admin existe y si su contraseÃ±a estÃ¡ correctamente hasheada.</li>
+                            <li><strong>Resetear ContraseÃ±a:</strong> Resetea la contraseÃ±a del admin a "admin123".</li>
+                            <li><strong>Probar Login:</strong> Intenta hacer login con las credenciales por defecto.</li>
+                        </ul>
+                    </div>
+
+                    <div class="alert alert-warning mt-3 elev-1">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>Nota:</strong> Los resultados tambiÃ©n aparecen en la consola de la aplicaciÃ³n.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string resultado = string.Empty;
+
+    private async Task DiagnosticarAdmin()
+    {
+        resultado = "Ejecutando diagnÃ³stico...\n";
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            await DatabaseService.DiagnosticarUsuarioAdminAsync();
+            resultado = "âœ… DiagnÃ³stico completado. Revisa la consola de la aplicaciÃ³n para ver los detalles completos.";
+        }
+        catch (Exception ex)
+        {
+            resultado = $"âŒ Error: {ex.Message}\n{ex.StackTrace}";
+        }
+    }
+
+    private async Task ResetearPasswordAdmin()
+    {
+        resultado = "Reseteando contraseÃ±a del admin...\n";
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            await DatabaseService.ResetearPasswordAdminAsync();
+            resultado = "âœ… ContraseÃ±a reseteada exitosamente a 'admin123'.\nAhora puedes intentar iniciar sesiÃ³n nuevamente.";
+        }
+        catch (Exception ex)
+        {
+            resultado = $"âŒ Error: {ex.Message}\n{ex.StackTrace}";
+        }
+    }
+
+    private async Task ProbarLogin()
+    {
+        resultado = "Probando login con admin/admin123...\n";
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            var usuario = await UsuarioService.LoginAsync("admin", "admin123");
+
+            if (usuario != null)
+            {
+                resultado = $"âœ… LOGIN EXITOSO!\n\n";
+                resultado += $"ID: {usuario.Id_Usuario}\n";
+                resultado += $"Usuario: {usuario.NombreUsuario}\n";
+                resultado += $"Nombre: {usuario.NombreCompleto}\n";
+                resultado += $"Rol: {usuario.Rol}\n";
+                resultado += $"Email: {usuario.Email}\n";
+                resultado += $"Activo: {usuario.Activo}\n";
+                
+            }
+            else
+            {
+                resultado = "âŒ LOGIN FALLIDO\n\n";
+                resultado += "Las credenciales no son vÃ¡lidas.\n";
+                resultado += "Intenta ejecutar 'Resetear ContraseÃ±a Admin' y vuelve a probar.";
+            }
+        }
+        catch (Exception ex)
+        {
+            resultado = $"âŒ Error durante el login: {ex.Message}\n{ex.StackTrace}";
+        }
+    }
+}
+

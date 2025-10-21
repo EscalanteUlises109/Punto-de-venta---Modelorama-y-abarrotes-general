@@ -1,0 +1,214 @@
+﻿@page "/productos"
+@using IntegraTech_POS.Models
+@using IntegraTech_POS.Services
+@inject IProductoService ProductoService
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Productos - Punto de Venta</PageTitle>
+
+@if (!AuthService.EsAdministrador() && !AuthService.EsGerente())
+{
+    <div class="container mt-5">
+        <div class="alert alert-danger">
+            <h4><i class="bi bi-shield-x"></i> Acceso Denegado</h4>
+            <p>Solo los Administradores y Gerentes pueden acceder a la gestión de productos.</p>
+            <button class="btn btn-primary" @onclick='() => Navigation.NavigateTo("/ventas")'>
+                Ir a Ventas
+            </button>
+        </div>
+    </div>
+}
+else
+{
+
+<AlertaStockBajo @ref="alertaStockBajo" 
+                 NombreProducto="@productoAlerta" 
+                 StockActual="@stockActualAlerta" 
+                 StockMinimo="@stockMinimoAlerta"
+                 DuracionSegundos="5" />
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3 card-surface">
+        <div class="p-3">
+            <h2 class="mb-0">Gestión de Productos</h2>
+        </div>
+        <div class="p-3">
+            <button class="btn btn-success-brand" @onclick="NuevoProducto">
+                <i class="fas fa-plus"></i> Nuevo Producto
+            </button>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
+    }
+    else if (productos != null && productos.Any())
+    {
+        <div class="row">
+            @foreach (var producto in productos)
+            {
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card-surface h-100 elev-1">
+                        <div class="text-center p-3" style="height: 200px; overflow: hidden; border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);">
+                            <ImagenProducto RutaImagen="@producto.ImagenPath" 
+                                          CssClass="img-fluid" 
+                                          Style="max-height: 100%; max-width: 100%; object-fit: contain;" />
+                        </div>
+                        <div class="p-3">
+                            <h5 class="mb-2">@producto.Nombre_Producto</h5>
+                            <p class="mb-0">
+                                <strong>Precio:</strong> $@producto.Precio_Venta.ToString("N2")<br>
+                                <strong>Stock:</strong> @producto.Cantidad @producto.Unidad_Medida<br>
+                                <strong>Categoría:</strong> @producto.Categoria<br>
+                                @if (!string.IsNullOrEmpty(producto.Codigo_Barras))
+                                {
+                                    <strong>Código:</strong> @producto.Codigo_Barras<br>
+                                }
+                                @if (producto.Fecha_Vencimiento.HasValue && producto.Fecha_Vencimiento.Value < DateTime.Now.AddDays(7))
+                                {
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="fas fa-exclamation-triangle"></i> Próximo a vencer
+                                    </span><br>
+                                }
+                                <span class="badge @(producto.Cantidad <= producto.Stock_Minimo ? "bg-danger" : "bg-success")">
+                                    @(producto.Cantidad <= producto.Stock_Minimo ? "Stock Bajo" : "En Stock")
+                                </span>
+                            </p>
+                        </div>
+                        <div class="p-3">
+                            <div class="btn-group w-100" role="group">
+                                <button class="btn btn-outline-primary btn-sm" 
+                                        @onclick="() => VerProducto(producto.Id_Producto)">
+                                    Ver
+                                </button>
+                                <button class="btn btn-outline-warning btn-sm" 
+                                        @onclick="() => EditarProducto(producto.Id_Producto)">
+                                    Editar
+                                </button>
+                                <button class="btn btn-outline-danger btn-sm" 
+                                        @onclick="() => EliminarProducto(producto.Id_Producto)">
+                                    Eliminar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info text-center elev-1">
+            <h4>No hay productos registrados</h4>
+            <p>Comienza agregando tu primer producto al inventario.</p>
+            <button class="btn btn-primary-brand" @onclick="NuevoProducto">
+                Agregar Primer Producto
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    private List<Producto>? productos;
+    private bool isLoading = true;
+    private AlertaStockBajo? alertaStockBajo;
+    private string productoAlerta = "";
+    private int stockActualAlerta = 0;
+    private int stockMinimoAlerta = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarProductos();
+    }
+
+    private async Task CargarProductos()
+    {
+        isLoading = true;
+        StateHasChanged(); 
+        
+        productos = await ProductoService.GetProductosAsync();
+        
+        isLoading = false;
+        StateHasChanged(); 
+        
+        
+        VerificarStockBajo();
+    }
+
+    private void VerificarStockBajo()
+    {
+        if (productos == null || !productos.Any()) return;
+
+        foreach (var producto in productos)
+        {
+            
+            var umbralCritico = producto.Stock_Minimo * 0.25m;
+            
+            if (producto.Cantidad <= umbralCritico && producto.Stock_Minimo > 0)
+            {
+                MostrarAlertaStockBajo(producto);
+                break; 
+            }
+        }
+    }
+
+    private void MostrarAlertaStockBajo(Producto producto)
+    {
+        productoAlerta = producto.Nombre_Producto;
+        stockActualAlerta = producto.Cantidad;
+        stockMinimoAlerta = producto.Stock_Minimo;
+        
+        StateHasChanged();
+        alertaStockBajo?.Mostrar();
+        
+        Console.WriteLine($"⚠️ ALERTA: {producto.Nombre_Producto} tiene stock crítico ({producto.Cantidad}/{producto.Stock_Minimo})");
+    }
+
+    private async Task EliminarProducto(int id)
+    {
+        var producto = productos?.FirstOrDefault(p => p.Id_Producto == id);
+        var nombreProducto = producto?.Nombre_Producto ?? "este producto";
+        
+        var confirmado = await JSRuntime.InvokeAsync<bool>(
+            "confirm", 
+            $"¿Está seguro de eliminar '{nombreProducto}'? Esta acción no se puede deshacer."
+        );
+        
+        if (confirmado && await ProductoService.DeleteProductoAsync(id))
+        {
+            await CargarProductos();
+        }
+    }
+
+    private void NuevoProducto()
+    {
+        Navigation.NavigateTo("/producto/nuevo");
+    }
+
+    private void VerProducto(int id)
+    {
+        Navigation.NavigateTo($"/producto/{id}");
+    }
+
+    private void EditarProducto(int id)
+    {
+        Navigation.NavigateTo($"/producto/editar/{id}");
+    }
+
+    protected override void OnInitialized()
+    {
+        
+        if (!AuthService.EsAdministrador() && !AuthService.EsGerente())
+        {
+            Navigation.NavigateTo("/acceso-denegado");
+        }
+    }
+}
+}

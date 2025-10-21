@@ -1,0 +1,125 @@
+﻿@inject AuthService AuthService
+
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="sidebar-brand d-flex align-items-center justify-content-between w-100">
+        <a class="brand-link d-flex align-items-center" href="">
+            <span class="brand-logo me-2">IP</span>
+            <span class="brand-text">IntegraTech-POS</span>
+        </a>
+        @if (AuthService.IsAuthenticated)
+        {
+            <span class="user-chip" title="@AuthService.RolActual">
+                @AuthService.UsuarioActual?.NombreUsuario <small class="role">(@AuthService.RolActual)</small>
+            </span>
+        }
+    </div>
+</div>
+
+<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+
+<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+    <nav class="flex-column">
+        @if (AuthService.IsAuthenticated)
+        {
+            <div class="nav-section-title">Navegación</div>
+            
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                    <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+                </NavLink>
+            </div>
+
+            
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="ventas">
+                    <span class="bi bi-cart-nav-menu" aria-hidden="true"></span> Ventas
+                </NavLink>
+            </div>
+
+            
+            @if (AuthService.EsAdministrador() || AuthService.EsGerente())
+            {
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="productos">
+                        <span class="bi bi-box-seam-nav-menu" aria-hidden="true"></span> Productos
+                    </NavLink>
+                </div>
+
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="promociones">
+                        <span class="bi bi-tags" aria-hidden="true"></span> Promociones
+                    </NavLink>
+                </div>
+            }
+
+            
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="reportes">
+                    <span class="bi bi-graph-up-nav-menu" aria-hidden="true"></span> Reportes
+                </NavLink>
+            </div>
+
+            
+            @if (AuthService.EsAdministrador())
+            {
+                <div class="nav-section-title">Administración</div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="sistema">
+                        <span class="bi bi-gear-nav-menu" aria-hidden="true"></span> Sistema
+                    </NavLink>
+                </div>
+
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="usuarios">
+                        <span class="bi bi-people-nav-menu" aria-hidden="true"></span> Usuarios
+                    </NavLink>
+                </div>
+
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="diagnostico">
+                        <span class="bi bi-bug-nav-menu" aria-hidden="true"></span> Diagnóstico
+                    </NavLink>
+                </div>
+            }
+
+            <div class="nav-section-sep"></div>
+            
+            <div class="nav-item px-3">
+                <a class="nav-link" @onclick="CerrarSesion" style="cursor: pointer;">
+                    <span class="bi bi-box-arrow-right" aria-hidden="true"></span> Cerrar Sesión
+                </a>
+            </div>
+        }
+        else
+        {
+            
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="login">
+                    <span class="bi bi-box-arrow-in-right" aria-hidden="true"></span> Iniciar Sesión
+                </NavLink>
+            </div>
+        }
+    </nav>
+</div>
+
+@code {
+    [Inject]
+    private NavigationManager Navigation { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        AuthService.OnAuthStateChanged += StateHasChanged;
+    }
+
+    private void CerrarSesion()
+    {
+        AuthService.Logout();
+        Navigation.NavigateTo("/login");
+    }
+
+    public void Dispose()
+    {
+        AuthService.OnAuthStateChanged -= StateHasChanged;
+    }
+}
+

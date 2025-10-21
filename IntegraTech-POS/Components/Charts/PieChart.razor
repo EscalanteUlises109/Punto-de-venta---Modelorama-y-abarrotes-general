@@ -1,0 +1,85 @@
+@using Microsoft.JSInterop
+
+<div class="w-100" style="@GetContainerStyle()">
+    <canvas id="@CanvasId" height="@Height"></canvas>
+    
+</div>
+
+@code {
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+
+    [Parameter] public string CanvasId { get; set; } = $"pie_{Guid.NewGuid().ToString("N")}";
+    [Parameter] public string Title { get; set; } = string.Empty;
+    [Parameter] public IEnumerable<string> Labels { get; set; } = Array.Empty<string>();
+    [Parameter] public IEnumerable<decimal> Data { get; set; } = Array.Empty<decimal>();
+    [Parameter] public IEnumerable<string>? Colors { get; set; }
+    [Parameter] public bool Doughnut { get; set; } = true;
+    [Parameter] public int Height { get; set; } = 180;
+    [Parameter] public int? MaxWidth { get; set; }
+
+    private bool _initialized;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _initialized = true;
+            await RenderAsync();
+        }
+        else if (_initialized)
+        {
+            await RenderAsync();
+        }
+    }
+
+    private async Task RenderAsync()
+    {
+        var type = Doughnut ? "doughnut" : "pie";
+        var backgroundColors = (Colors != null && Colors.Any())
+            ? Colors.ToArray()
+            : new[] { "#4e79a7", "#f28e2b", "#e15759", "#76b7b2", "#59a14f", "#edc949", "#af7aa1", "#ff9da7", "#9c755f", "#bab0ab" };
+
+        var labels = Labels?.ToArray() ?? Array.Empty<string>();
+        var data = Data?.Select(d => (double)d).ToArray() ?? Array.Empty<double>();
+
+        var config = new
+        {
+            type,
+            data = new
+            {
+                labels,
+                datasets = new[]
+                {
+                    new
+                    {
+                        data,
+                        backgroundColor = backgroundColors.Take(Math.Max(1, labels.Length)).ToArray(),
+                        borderWidth = 1
+                    }
+                }
+            },
+            options = new
+            {
+                responsive = true,
+                plugins = new
+                {
+                    legend = new { position = "bottom" },
+                    title = new { display = !string.IsNullOrWhiteSpace(Title), text = Title }
+                }
+            }
+        };
+
+        await JS.InvokeVoidAsync("appCharts.upsert", CanvasId, config);
+    }
+
+    private string GetContainerStyle()
+    {
+        var styles = new List<string> { "width:100%" };
+        if (MaxWidth.HasValue && MaxWidth.Value > 0)
+        {
+            styles.Add($"max-width:{MaxWidth.Value}px");
+            styles.Add("margin:0 auto");
+        }
+        return string.Join("; ", styles);
+    }
+}

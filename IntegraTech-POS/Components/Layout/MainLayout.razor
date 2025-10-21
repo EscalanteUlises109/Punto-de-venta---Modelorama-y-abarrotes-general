@@ -1,0 +1,54 @@
+﻿@inherits LayoutComponentBase
+@using IntegraTech_POS.Services
+@inject BarcodeScannerService BarcodeScanner
+@inject DatabaseService DatabaseService
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+        <div class="top-row px-4">
+            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+        </div>
+
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            
+            Console.WriteLine("🔄 MainLayout - Inicializando DatabaseService...");
+            await DatabaseService.InitializeAsync();
+            Console.WriteLine("✅ MainLayout - DatabaseService inicializado");
+
+            
+            await BarcodeScanner.InitializeAsync();
+
+            
+            var currentPath = Navigation.ToAbsoluteUri(Navigation.Uri).PathAndQuery;
+            var isLoginPage = currentPath.Contains("/login", StringComparison.OrdinalIgnoreCase);
+
+            
+            if (!isLoginPage && !AuthService.IsAuthenticated)
+            {
+                Console.WriteLine("⚠️ Usuario no autenticado, redirigiendo a /login");
+                Navigation.NavigateTo("/login", forceLoad: true);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ MainLayout - Error en inicialización: {ex.Message}");
+        }
+    }
+}
+

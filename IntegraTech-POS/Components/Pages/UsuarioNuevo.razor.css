@@ -1,0 +1,22 @@
+﻿
+
+.campo-label {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+
+input.form-control.input-base,
+select.form-select.input-base {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+
+.card.card-surface .card-body {
+  padding: 20px;
+}
+
+
+.btn + .btn { margin-left: 8px; }
+

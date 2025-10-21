@@ -1,0 +1,27 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36414.22 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntegraTech-POS", "IntegraTech-POS\IntegraTech-POS.csproj", "{FDE8A71D-4D06-4B83-A838-FA76118C590C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FDE8A71D-4D06-4B83-A838-FA76118C590C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FDE8A71D-4D06-4B83-A838-FA76118C590C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FDE8A71D-4D06-4B83-A838-FA76118C590C}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{FDE8A71D-4D06-4B83-A838-FA76118C590C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FDE8A71D-4D06-4B83-A838-FA76118C590C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FDE8A71D-4D06-4B83-A838-FA76118C590C}.Release|Any CPU.Deploy.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {14CC7F05-D7F0-43C8-8C1B-1D2C7467F04E}
+	EndGlobalSection
+EndGlobal

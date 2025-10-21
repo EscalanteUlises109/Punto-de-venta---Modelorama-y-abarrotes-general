@@ -1,0 +1,61 @@
+{
+  "Files": [
+    {
+      "Id": "c:\\Users\\kueh5\\source\\repos\\IntegraTech-POS\\IntegraTech-POS\\obj\\Debug\\net8.0-maccatalyst\\maccatalyst-x64\\scopedcss\\bundle\\IntegraTech-POS.styles.css",
+      "PackagePath": "staticwebassets\\IntegraTech-POS.styles.css"
+    },
+    {
+      "Id": "c:\\Users\\kueh5\\source\\repos\\IntegraTech-POS\\IntegraTech-POS\\wwwroot\\css\\app.css",
+      "PackagePath": "staticwebassets\\css\\app.css"
+    },
+    {
+      "Id": "c:\\Users\\kueh5\\source\\repos\\IntegraTech-POS\\IntegraTech-POS\\wwwroot\\css\\bootstrap\\bootstrap.min.css",
+      "PackagePath": "staticwebassets\\css\\bootstrap\\bootstrap.min.css"
+    },
+    {
+      "Id": "c:\\Users\\kueh5\\source\\repos\\IntegraTech-POS\\IntegraTech-POS\\wwwroot\\css\\bootstrap\\bootstrap.min.css.map",
+      "PackagePath": "staticwebassets\\css\\bootstrap\\bootstrap.min.css.map"
+    },
+    {
+      "Id": "c:\\Users\\kueh5\\source\\repos\\IntegraTech-POS\\IntegraTech-POS\\wwwroot\\css\\theme.css",
+      "PackagePath": "staticwebassets\\css\\theme.css"
+    },
+    {
+      "Id": "c:\\Users\\kueh5\\source\\repos\\IntegraTech-POS\\IntegraTech-POS\\wwwroot\\favicon.png",
+      "PackagePath": "staticwebassets\\favicon.png"
+    },
+    {
+      "Id": "c:\\Users\\kueh5\\source\\repos\\IntegraTech-POS\\IntegraTech-POS\\wwwroot\\index.html",
+      "PackagePath": "staticwebassets\\index.html"
+    },
+    {
+      "Id": "c:\\Users\\kueh5\\source\\repos\\IntegraTech-POS\\IntegraTech-POS\\wwwroot\\js\\charts.js",
+      "PackagePath": "staticwebassets\\js\\charts.js"
+    },
+    {
+      "Id": "c:\\Users\\kueh5\\source\\repos\\IntegraTech-POS\\IntegraTech-POS\\wwwroot\\lib\\chart.umd.min.js",
+      "PackagePath": "staticwebassets\\lib\\chart.umd.min.js"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0-maccatalyst\\maccatalyst-x64\\staticwebassets\\msbuild.IntegraTech-POS.Microsoft.AspNetCore.StaticWebAssetEndpoints.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssetEndpoints.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0-maccatalyst\\maccatalyst-x64\\staticwebassets\\msbuild.IntegraTech-POS.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0-maccatalyst\\maccatalyst-x64\\staticwebassets\\msbuild.build.IntegraTech-POS.props",
+      "PackagePath": "build\\IntegraTech-POS.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0-maccatalyst\\maccatalyst-x64\\staticwebassets\\msbuild.buildMultiTargeting.IntegraTech-POS.props",
+      "PackagePath": "buildMultiTargeting\\IntegraTech-POS.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0-maccatalyst\\maccatalyst-x64\\staticwebassets\\msbuild.buildTransitive.IntegraTech-POS.props",
+      "PackagePath": "buildTransitive\\IntegraTech-POS.props"
+    }
+  ],
+  "ElementsToRemove": []
+}

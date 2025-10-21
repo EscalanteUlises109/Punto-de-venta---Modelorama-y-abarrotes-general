@@ -1,0 +1,84 @@
+﻿@using IntegraTech_POS.Services
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+
+@code {
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    [Parameter]
+    public string? RolRequerido { get; set; }
+
+    [Parameter]
+    public string? AccionRequerida { get; set; }
+
+    [Parameter]
+    public RenderFragment? NotAuthorized { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (!AuthService.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        
+        if (!string.IsNullOrEmpty(RolRequerido) && !AuthService.TieneRol(RolRequerido))
+        {
+            Navigation.NavigateTo("/acceso-denegado");
+            return;
+        }
+
+        
+        if (!string.IsNullOrEmpty(AccionRequerida) && !AuthService.PuedeRealizarAccion(AccionRequerida))
+        {
+            Navigation.NavigateTo("/acceso-denegado");
+            return;
+        }
+    }
+}
+
+@if (AuthService.IsAuthenticated)
+{
+    @if (string.IsNullOrEmpty(RolRequerido) || AuthService.TieneRol(RolRequerido))
+    {
+        @if (string.IsNullOrEmpty(AccionRequerida) || AuthService.PuedeRealizarAccion(AccionRequerida))
+        {
+            @ChildContent
+        }
+        else
+        {
+            @if (NotAuthorized != null)
+            {
+                @NotAuthorized
+            }
+            else
+            {
+                <div class="alert alert-danger">
+                    <i class="bi bi-shield-x"></i> No tienes permisos para realizar esta acciÃ³n.
+                </div>
+            }
+        }
+    }
+    else
+    {
+        @if (NotAuthorized != null)
+        {
+            @NotAuthorized
+        }
+        else
+        {
+            <div class="alert alert-danger">
+                <i class="bi bi-shield-x"></i> No tienes permisos para acceder a esta secciÃ³n.
+            </div>
+        }
+    }
+}
+else
+{
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle"></i> Debes iniciar sesiÃ³n para acceder.
+    </div>
+}
+

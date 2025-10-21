@@ -1,0 +1,242 @@
+﻿@page "/usuario/nuevo"
+@using IntegraTech_POS.Services
+@using IntegraTech_POS.Models
+@using Microsoft.AspNetCore.Components.Forms
+@using System.ComponentModel.DataAnnotations
+@inject IUsuarioService UsuarioService
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+
+<div class="container mt-4" style="background: var(--color-bg); min-height: 100vh;">
+    <div class="row justify-content-center">
+        <div class="col-md-9 col-lg-8">
+            <div class="card card-surface elev-2">
+                <div class="card-header bg-success-gradient text-white border-0" style="border-radius: var(--radius-lg) var(--radius-lg) 0 0; padding: 16px 20px;">
+                    <h4 class="mb-0" style="display:flex; align-items:center; gap:8px;"><i class="bi bi-person-plus"></i> Crear Nuevo Usuario</h4>
+                </div>
+                <div class="card-body" style="padding: 20px;">
+                    @if (!string.IsNullOrEmpty(mensajeError))
+                    {
+                        <div class="alert alert-danger alert-dismissible">
+                            @mensajeError
+                            <button type="button" class="btn-close" @onclick="() => mensajeError = null"></button>
+                        </div>
+                    }
+
+                    <EditForm Model="@nuevoUsuario" OnValidSubmit="CrearUsuario">
+                        <DataAnnotationsValidator />
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label campo-label">Nombre de Usuario *</label>
+                                <InputText @bind-Value="nuevoUsuario.NombreUsuario" class="form-control input-base" placeholder="usuario123" />
+                                <ValidationMessage For="@(() => nuevoUsuario.NombreUsuario)" />
+                                <small class="form-text text-muted">Sin espacios, mÃ­nimo 4 caracteres</small>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label campo-label">Nombre Completo *</label>
+                                <InputText @bind-Value="nuevoUsuario.NombreCompleto" class="form-control input-base" placeholder="Juan PÃ©rez" />
+                                <ValidationMessage For="@(() => nuevoUsuario.NombreCompleto)" />
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label campo-label">ContraseÃ±a *</label>
+                                <InputText type="password" @bind-Value="password" class="form-control input-base" placeholder="MÃ­nimo 6 caracteres" />
+                                <small class="form-text text-muted">MÃ­nimo 6 caracteres</small>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label campo-label">Confirmar ContraseÃ±a *</label>
+                                <InputText type="password" @bind-Value="passwordConfirm" class="form-control input-base" placeholder="Repita la contraseÃ±a" />
+                                <small class="form-text text-muted">Debe coincidir con la contraseÃ±a</small>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label campo-label">Email</label>
+                                <InputText type="email" @bind-Value="nuevoUsuario.Email" class="form-control input-base" placeholder="usuario@ejemplo.com" />
+                                <ValidationMessage For="@(() => nuevoUsuario.Email)" />
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label campo-label">Rol *</label>
+                                <InputSelect @bind-Value="nuevoUsuario.Rol" class="form-select input-base">
+                                    <option value="">-- Seleccione un rol --</option>
+                                    <option value="Admin">Administrador (Control total)</option>
+                                    <option value="Gerente">Gerente (Productos, ventas, reportes)</option>
+                                    <option value="Cajero">Cajero (Solo ventas y reportes)</option>
+                                </InputSelect>
+                                <ValidationMessage For="@(() => nuevoUsuario.Rol)" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <InputCheckbox @bind-Value="nuevoUsuario.Activo" class="form-check-input" id="activoCheck" />
+                                <label class="form-check-label campo-label" for="activoCheck">
+                                    Usuario Activo
+                                </label>
+                            </div>
+                        </div>
+
+                        <hr />
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <button type="button" class="btn btn-secondary" @onclick="Cancelar">
+                                <i class="bi bi-x-circle"></i> Cancelar
+                            </button>
+                            <button type="submit" class="btn btn-success btn-success-brand" disabled="@guardando">
+                                @if (guardando)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                }
+                                <i class="bi bi-save"></i> Crear Usuario
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+
+            
+            <div class="card card-surface elev-1 mt-3">
+                <div class="card-body" style="color: var(--color-text);">
+                    <h6><i class="bi bi-info-circle"></i> InformaciÃ³n sobre Roles:</h6>
+                    <ul class="mb-0">
+                        <li><strong>Administrador:</strong> Acceso completo al sistema, puede crear usuarios, modificar configuraciÃ³n.</li>
+                        <li><strong>Gerente:</strong> Puede gestionar productos, ver reportes y realizar ventas.</li>
+                        <li><strong>Cajero:</strong> Solo puede realizar ventas y ver reportes bÃ¡sicos.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private Usuario nuevoUsuario = new Usuario
+    {
+        Activo = true,
+        FechaCreacion = DateTime.Now
+    };
+    
+    private string password = string.Empty;
+    private string passwordConfirm = string.Empty;
+    private string? mensajeError;
+    private bool guardando = false;
+
+    protected override void OnInitialized()
+    {
+        if (!AuthService.EsAdministrador())
+        {
+            Navigation.NavigateTo("/acceso-denegado");
+        }
+    }
+
+    private async Task CrearUsuario()
+    {
+        mensajeError = null;
+        guardando = true;
+
+        try
+        {
+            
+            if (string.IsNullOrWhiteSpace(nuevoUsuario.NombreUsuario))
+            {
+                mensajeError = "El nombre de usuario es obligatorio";
+                guardando = false;
+                return;
+            }
+
+            if (nuevoUsuario.NombreUsuario.Contains(" "))
+            {
+                mensajeError = "El nombre de usuario no puede contener espacios";
+                guardando = false;
+                return;
+            }
+
+            if (nuevoUsuario.NombreUsuario.Length < 4)
+            {
+                mensajeError = "El nombre de usuario debe tener al menos 4 caracteres";
+                guardando = false;
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(password))
+            {
+                mensajeError = "La contraseÃ±a es obligatoria";
+                guardando = false;
+                return;
+            }
+
+            if (password.Length < 6)
+            {
+                mensajeError = "La contraseÃ±a debe tener al menos 6 caracteres";
+                guardando = false;
+                return;
+            }
+
+            if (password != passwordConfirm)
+            {
+                mensajeError = "Las contraseÃ±as no coinciden";
+                guardando = false;
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(nuevoUsuario.Rol))
+            {
+                mensajeError = "Debe seleccionar un rol";
+                guardando = false;
+                return;
+            }
+
+            Console.WriteLine("========================================");
+            Console.WriteLine($"ðŸ†• Creando nuevo usuario:");
+            Console.WriteLine($"   Usuario: {nuevoUsuario.NombreUsuario}");
+            Console.WriteLine($"   Password (antes de trim): '{password}' (length: {password.Length})");
+            
+            
+            var passwordLimpia = password.Trim();
+            Console.WriteLine($"   Password (despuÃ©s de trim): '{passwordLimpia}' (length: {passwordLimpia.Length})");
+
+            
+            nuevoUsuario.NombreUsuario = nuevoUsuario.NombreUsuario.Trim();
+            nuevoUsuario.NombreCompleto = nuevoUsuario.NombreCompleto?.Trim() ?? "";
+            nuevoUsuario.Email = nuevoUsuario.Email?.Trim() ?? "";
+            nuevoUsuario.FechaCreacion = DateTime.Now;
+
+            
+            var resultado = await UsuarioService.CreateUsuarioAsync(nuevoUsuario, passwordLimpia);
+
+            if (resultado)
+            {
+                Console.WriteLine("âœ… Usuario creado exitosamente");
+                Navigation.NavigateTo("/usuarios");
+            }
+            else
+            {
+                mensajeError = "Error al crear el usuario";
+                Console.WriteLine("âŒ Error al crear usuario");
+            }
+        }
+        catch (Exception ex)
+        {
+            mensajeError = $"Error: {ex.Message}";
+            Console.WriteLine($"âŒ ExcepciÃ³n al crear usuario: {ex.Message}");
+            Console.WriteLine($"   Stack: {ex.StackTrace}");
+        }
+        finally
+        {
+            guardando = false;
+        }
+    }
+
+    private void Cancelar()
+    {
+        Navigation.NavigateTo("/usuarios");
+    }
+}
+

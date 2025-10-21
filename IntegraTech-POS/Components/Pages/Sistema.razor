@@ -1,0 +1,1273 @@
+﻿@page "/sistema"
+@inject DatabaseService DatabaseService
+@inject IImagenService ImagenService
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@using Microsoft.Maui.Storage
+
+<PageTitle>InformaciÃ³n del Sistema</PageTitle>
+
+@if (!AuthService.EsAdministrador())
+{
+    <div class="container mt-5">
+        <div class="alert alert-danger">
+            <h4><i class="bi bi-shield-x"></i> Acceso Denegado</h4>
+            <p>Solo los Administradores pueden acceder a la configuraciÃ³n del sistema.</p>
+            <button class="btn btn-primary" @onclick='() => Navigation.NavigateTo("/")'>
+                Volver al Inicio
+            </button>
+        </div>
+    </div>
+}
+else
+{
+<div class="container-fluid">
+    <div class="card-surface mb-4">
+        <div class="p-4 bg-brand-gradient text-white" style="border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);">
+            <h2 class="mb-0">âš™ï¸ InformaciÃ³n del Sistema</h2>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card-surface mb-4">
+                <div class="p-3 bg-brand-gradient text-white" style="border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);">
+                    <h5 class="mb-0">ðŸ§¾ ConfiguraciÃ³n de Ticket</h5>
+                </div>
+                <div class="p-3">
+                    @if (!string.IsNullOrEmpty(mensajeTicket))
+                    {
+                        <div class="alert @(ticketExitoso ? "alert-success" : "alert-danger") alert-dismissible fade show elev-1">
+                            @mensajeTicket
+                            <button type="button" class="btn-close" @onclick="() => mensajeTicket = null"></button>
+                        </div>
+                    }
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Nombre de la tienda</label>
+                                <input class="input-base" @bind="cfgTiendaNombre" />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">TelÃ©fono (opcional)</label>
+                                <input class="input-base" @bind="cfgTiendaTelefono" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">DirecciÃ³n</label>
+                        <textarea class="input-base" rows="2" @bind="cfgTiendaDireccion"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Logo (opcional)</label>
+                        <div class="d-flex gap-2 align-items-center">
+                            <button class="btn btn-secondary" @onclick="SeleccionarLogo">Elegir imagenâ€¦</button>
+                            @if (!string.IsNullOrEmpty(cfgLogoNombre))
+                            {
+                                <span class="small text-muted">@cfgLogoNombre</span>
+                            }
+                            <div class="flex-grow-1"></div>
+                            @if (!string.IsNullOrEmpty(cfgTiendaLogo))
+                            {
+                                <button class="btn btn-outline-danger" @onclick="EliminarLogo">Quitar logo</button>
+                            }
+                        </div>
+                        <div id="dropLogo" class="mt-2 p-4 border rounded text-center" style="border-style: dashed; cursor: pointer;"
+                             @onclick="SeleccionarLogo">
+                            Arrastra y suelta aquÃ­ el logo o haz clic para elegir
+                        </div>
+                        @if (!string.IsNullOrEmpty(cfgTiendaLogo))
+                        {
+                            <div class="mt-2">
+                                <ImagenProducto RutaImagen="@cfgTiendaLogo" CssClass="img-thumbnail" Style="max-width: 120px; max-height: 120px;" />
+                            </div>
+                        }
+                        <small class="text-muted d-block mt-1">Se imprimirÃ¡ centrado. Sugerido: imagen monocroma pequeÃ±a.</small>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Ancho de papel (puntos)</label>
+                            <select class="input-base" @bind="cfgWidthDots">
+                                <option value="384">58 mm (384)</option>
+                                <option value="576">80 mm (576)</option>
+                                <option value="640">80 mm ancho (640)</option>
+                            </select>
+                            <small class="text-muted">Ajusta segÃºn tu impresora (afecta el tamaÃ±o del logo)</small>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label class="form-label">LÃ­nea adicional 1</label>
+                            <input class="input-base" @bind="cfgExtra1" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">LÃ­nea adicional 2</label>
+                            <input class="input-base" @bind="cfgExtra2" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">LÃ­nea adicional 3</label>
+                            <input class="input-base" @bind="cfgExtra3" />
+                        </div>
+                    </div>
+                    <div class="mt-3 d-flex gap-2">
+                        <button class="btn btn-primary-brand" @onclick="GuardarTicketConfig">
+                            <i class="bi bi-check-circle"></i> Guardar
+                        </button>
+                        <button class="btn btn-success-brand" @onclick="ImprimirPruebaTicket">
+                            <i class="bi bi-printer"></i> Imprimir prueba
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-surface mt-4">
+                <div class="p-3 bg-brand-gradient text-white" style="border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);">
+                    <h5 class="mb-0">ðŸ–¨ï¸ GuÃ­a de conexiÃ³n de impresoras</h5>
+                </div>
+                <div class="p-3">
+                    <h6>USB (Windows)</h6>
+                    <ul>
+                        <li>Instala el driver del fabricante si aplica.</li>
+                        <li>En Dispositivos e Impresoras, anota el nombre exacto y configÃºralo como PRINTER_NAME.</li>
+                    </ul>
+                    <h6>Red (TCP/IP)</h6>
+                    <ul>
+                        <li>Conecta por Ethernet/WiFi; verifica la IP (ej. 192.168.1.50).</li>
+                        <li>Configura PRINTER_IP y PRINTER_PORT (tÃ­pico 9100).</li>
+                    </ul>
+                    <h6>Bluetooth (Puerto COM)</h6>
+                    <ul>
+                        <li>Empareja la impresora en Windows; revisa en Administrador de dispositivos el puerto COM asignado (COM5/COM6...).</li>
+                        <li>Configura PRINTER_COM_PORT=COM6 y PRINTER_BAUD (9600/115200 segÃºn el modelo).</li>
+                    </ul>
+                    <small class="text-muted">Sugerencia: Logo monocromo y PRINTER_WIDTH_DOTS correcto mejoran la calidad.</small>
+                </div>
+            </div>
+            <div class="card-surface">
+                <div class="p-3 bg-brand-gradient text-white" style="border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);">
+                    <h5 class="mb-0">ðŸ“ UbicaciÃ³n de Archivos</h5>
+                </div>
+                <div class="p-3">
+                    <div class="mb-3">
+                        <h6>Base de Datos SQLite:</h6>
+                        <div class="input-group">
+                            <input type="text" class="input-base" value="@rutaBaseDatos" readonly />
+                            <button class="btn btn-outline-secondary" @onclick="CopiarRuta">
+                                <i class="bi bi-clipboard"></i> Copiar
+                            </button>
+                            <button class="btn btn-primary-brand" @onclick="AbrirCarpeta">
+                                <i class="bi bi-folder2-open"></i> Abrir Carpeta
+                            </button>
+                        </div>
+                        <small class="form-text text-muted">
+                            AquÃ­ se almacenan todos tus productos, ventas y reportes
+                        </small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6>Carpeta de ImÃ¡genes:</h6>
+                        <div class="input-group">
+                            <input type="text" class="input-base" value="@rutaImagenes" readonly />
+                            <button class="btn btn-primary-brand" @onclick="AbrirCarpetaImagenes">
+                                <i class="bi bi-folder2-open"></i> Abrir Carpeta
+                            </button>
+                        </div>
+                        <small class="form-text text-muted">
+                            AquÃ­ se guardan todas las imÃ¡genes de los productos
+                        </small>
+                    </div>
+                    
+                    @if (infoBaseDatos != null)
+                    {
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card-surface elev-1">
+                                    <div class="p-3 text-center">
+                                        <h5 class="card-title">ðŸ“¦ Productos</h5>
+                                        <h3 class="text-primary">@infoBaseDatos.TotalProductos</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card-surface elev-1">
+                                    <div class="p-3 text-center">
+                                        <h5 class="card-title">ðŸ’° Ventas</h5>
+                                        <h3 class="text-success">@infoBaseDatos.TotalVentas</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card-surface elev-1">
+                                    <div class="p-3 text-center">
+                                        <h5 class="card-title">ðŸ’¾ TamaÃ±o BD</h5>
+                                        <h3 class="text-info">@infoBaseDatos.TamanoArchivo</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="card-surface mt-4">
+                <div class="p-3 bg-brand-gradient text-white" style="border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);">
+                    <h5 class="mb-0">ðŸ”§ Herramientas de Base de Datos</h5>
+                </div>
+                <div class="p-3">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6>Respaldo de Datos</h6>
+                            <p class="text-muted">Crea una copia de seguridad de toda tu informaciÃ³n</p>
+                            <button class="btn btn-success-brand" @onclick="CrearRespaldo">
+                                <i class="bi bi-download"></i> Crear Respaldo
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <h6>Cargar Datos de Ejemplo</h6>
+                            <p class="text-muted">Agrega 3 productos de ejemplo para pruebas</p>
+                            <button class="btn btn-info" @onclick="CargarDatosEjemplo" disabled="@cargandoDatos">
+                                @if (cargandoDatos)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                }
+                                <i class="bi bi-cart-plus"></i> Cargar Datos
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <h6>Resetear Datos</h6>
+                            <p class="text-muted">Elimina todo completamente (Â¡Cuidado!)</p>
+                            <button class="btn btn-warning" @onclick="MostrarConfirmacionReset">
+                                <i class="bi bi-arrow-clockwise"></i> Resetear BD
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-surface mt-4">
+                <div class="p-3 bg-brand-gradient text-white" style="border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);">
+                    <h5 class="mb-0">ðŸ“„ ConfiguraciÃ³n de Reportes</h5>
+                </div>
+                <div class="p-3">
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="reporteAutomatico" 
+                                   checked="@reporteAutomaticoActivo" 
+                                   @onchange="CambiarReporteAutomatico" />
+                            <label class="form-check-label" for="reporteAutomatico">
+                                Generar reporte PDF automÃ¡tico diario
+                            </label>
+                        </div>
+                        <small class="form-text text-muted">
+                            Si estÃ¡ activado, se generarÃ¡ automÃ¡ticamente un PDF con las ventas del dÃ­a a las 23:59
+                        </small>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(mensajeConfigReporte))
+                    {
+                        <div class="alert alert-info alert-dismissible fade show elev-1">
+                            @mensajeConfigReporte
+                            <button type="button" class="btn-close" @onclick="() => mensajeConfigReporte = null"></button>
+                        </div>
+                    }
+
+                    <hr />
+
+                    <div class="mb-3">
+                        <h6>UbicaciÃ³n de Reportes PDF:</h6>
+                        <div class="input-group">
+                            <input type="text" class="input-base" value="@rutaReportes" readonly />
+                            <button class="btn btn-primary-brand" @onclick="AbrirCarpetaReportes">
+                                <i class="bi bi-folder2-open"></i> Abrir
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mt-2">
+                        <div class="col-md-8">
+                            <label class="form-label">Correo destino para reportes (PDF/CSV)</label>
+                            <input class="input-base" @bind="cfgReportEmailTo" placeholder="cliente@correo.com" />
+                            <small class="text-muted">Se usarÃ¡ al generar y enviar reportes manualmente.</small>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end gap-2">
+                            <button class="btn btn-primary-brand" @onclick="GuardarEmailReporte"><i class="bi bi-save"></i> Guardar correo</button>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-6">
+                            <label class="form-label">CC (opcional, separados por coma)</label>
+                            <input class="input-base" @bind="cfgReportEmailCc" placeholder="cc1@correo.com, cc2@correo.com" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">BCC/Copia oculta (opcional)</label>
+                            <input class="input-base" @bind="cfgReportEmailBcc" placeholder="bcc1@correo.com, bcc2@correo.com" />
+                        </div>
+                    </div>
+
+                    <div class="mt-3 d-flex flex-wrap gap-2">
+                        <button class="btn btn-success-brand" @onclick="GenerarYEnviarPdfHoy"><i class="bi bi-envelope-paper"></i> Generar PDF de hoy y enviar</button>
+                        <button class="btn btn-info" @onclick="GenerarYEnviarCsvHoy"><i class="bi bi-envelope"></i> Generar CSV de hoy y enviar</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-surface mt-4">
+                <div class="p-3 bg-brand-gradient text-white" style="border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);">
+                    <h5 class="mb-0">âœ‰ï¸ ConfiguraciÃ³n SMTP (Correo)</h5>
+                </div>
+                <div class="p-3">
+                    @if (!string.IsNullOrEmpty(mensajeSmtp))
+                    {
+                        <div class="alert @(smtpExitoso ? "alert-success" : "alert-danger") alert-dismissible fade show elev-1">
+                            @mensajeSmtp
+                            <button type="button" class="btn-close" @onclick="() => mensajeSmtp = null"></button>
+                            @if (!smtpExitoso)
+                            {
+                                <div class="mt-2">
+                                    <a href="#" @onclick="MostrarDetalleSmtp">Ver detalle tÃ©cnico</a>
+                                </div>
+                                @if (mostrarSmtpDetalle && !string.IsNullOrEmpty(smtpLastError))
+                                {
+                                    <pre class="mt-2 small" style="white-space:pre-wrap;max-height:200px;overflow:auto;">@smtpLastError</pre>
+                                }
+                            }
+                        </div>
+                    }
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Host</label>
+                            <input class="input-base" @bind="cfgSmtpHost" placeholder="smtp.servidor.com" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Puerto</label>
+                            <input type="number" class="input-base" @bind-value="cfgSmtpPort" @bind-value:event="oninput" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Usuario</label>
+                            <input class="input-base" @bind="cfgSmtpUser" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Remitente (From)</label>
+                            <input class="input-base" @bind="cfgSmtpFrom" placeholder="noreply@tu-dominio.com" />
+                        </div>
+                    </div>
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-6">
+                            <label class="form-label">ContraseÃ±a</label>
+                            <input type="password" class="input-base" @bind="cfgSmtpPass" />
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="smtpSsl" checked="@cfgSmtpSsl" @onchange="@(e => cfgSmtpSsl = (bool)(e.Value ?? true))" />
+                                <label class="form-check-label" for="smtpSsl">Usar SSL/TLS</label>
+                            </div>
+                        </div>
+                    </div>
+                    <small class="text-muted d-block mt-2">Nota: Las credenciales se guardan localmente en tu equipo.</small>
+                    <div class="mt-3 d-flex gap-2 flex-wrap">
+                        <button class="btn btn-primary-brand" @onclick="GuardarSmtp"><i class="bi bi-check-circle"></i> Guardar SMTP</button>
+                        <button class="btn btn-outline-secondary" @onclick="ProbarSmtp"><i class="bi bi-send"></i> Enviar correo de prueba</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-surface mt-4">
+                <div class="p-3 bg-brand-gradient text-white" style="border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);">
+                    <h5 class="mb-0">â° Reportes AutomÃ¡ticos</h5>
+                </div>
+                <div class="p-3">
+                    @if (!string.IsNullOrEmpty(mensajeReporteAuto))
+                    {
+                        <div class="alert @(reporteAutoExitoso ? "alert-success" : "alert-danger") alert-dismissible fade show elev-1">
+                            @mensajeReporteAuto
+                            <button type="button" class="btn-close" @onclick="() => mensajeReporteAuto = null"></button>
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <label class="form-check-label mb-2">
+                            <strong>Generar reportes automÃ¡ticamente cada dÃ­a:</strong>
+                        </label>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="reporteAutoSwitch" 
+                                   checked="@reporteAutomaticoHabilitado" 
+                                   @onchange="CambiarReporteAutomatico" />
+                            <label class="form-check-label" for="reporteAutoSwitch">
+                                @(reporteAutomaticoHabilitado ? "Activado âœ…" : "Desactivado âŒ")
+                            </label>
+                        </div>
+                        <small class="form-text text-muted">
+                            Cuando estÃ¡ activado, el sistema generarÃ¡ automÃ¡ticamente reportes PDF y CSV cada dÃ­a a la hora configurada.
+                        </small>
+                    </div>
+
+                    @if (reporteAutomaticoHabilitado)
+                    {
+                        <div class="mb-3">
+                            <label for="horaReporte" class="form-label">
+                                <strong>Hora de generaciÃ³n:</strong>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-clock"></i></span>
+                                <input type="time" class="input-base" id="horaReporte" 
+                                       value="@horaReporteAutomatico" 
+                                       @onchange="@((ChangeEventArgs e) => horaReporteAutomatico = e.Value?.ToString() ?? "19:00")" />
+                                <button class="btn btn-primary-brand" @onclick="GuardarHoraReporte">
+                                    <i class="bi bi-check-circle"></i> Guardar Hora
+                                </button>
+                            </div>
+                            <small class="form-text text-muted">
+                                Ejemplo: Si tu tienda cierra a las 19:00 (7 PM), configura esa hora para generar el reporte al cierre del dÃ­a.
+                            </small>
+                        </div>
+
+                        @if (proximaEjecucion.HasValue)
+                        {
+                            <div class="alert alert-info elev-1">
+                                <i class="bi bi-info-circle"></i> <strong>PrÃ³ximo reporte automÃ¡tico:</strong><br>
+                                @proximaEjecucion.Value.ToString("dd/MM/yyyy") a las @proximaEjecucion.Value.ToString("HH:mm")
+                                <br><small>Tiempo restante: @ObtenerTiempoRestante()</small>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card-surface">
+                <div class="p-3 bg-brand-gradient text-white" style="border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);">
+                    <h5 class="mb-0">ðŸ’¡ InformaciÃ³n Ãštil</h5>
+                </div>
+                <div class="p-3">
+                    <h6>Â¿DÃ³nde estÃ¡n mis datos?</h6>
+                    <p class="text-muted">
+                        Todos tus datos se guardan en una base de datos SQLite local en tu computadora. 
+                        No se envÃ­an a internet, estÃ¡n 100% seguros en tu PC.
+                    </p>
+                    
+                    <h6>Â¿CÃ³mo hacer respaldo?</h6>
+                    <p class="text-muted">
+                        Simplemente copia el archivo "IntegraTechPOS.db" a una USB, otro disco, 
+                        o servicio en la nube como Google Drive.
+                    </p>
+                    
+                    <h6>Â¿CÃ³mo restaurar respaldo?</h6>
+                    <p class="text-muted">
+                        Cierra la aplicaciÃ³n, reemplaza el archivo "IntegraTechPOS.db" 
+                        por tu respaldo, y vuelve a abrir la aplicaciÃ³n.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="card-surface mb-3">
+        <div class="p-3 bg-brand-gradient text-white" style="border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);">
+            <h5 class="mb-0">âš™ï¸ ConfiguraciÃ³n de IVA</h5>
+        </div>
+        <div class="p-3">
+            <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" id="iva_activado" @bind="ivaActivoCfg" />
+                <label class="form-check-label" for="iva_activado">Habilitar IVA en ventas</label>
+            </div>
+            <div class="row g-2 align-items-end">
+                <div class="col-sm-4">
+                    <label class="form-label">Porcentaje de IVA (%)</label>
+                    <input type="number" step="0.01" min="0" class="input-base" @bind="ivaPorcentajeTexto" />
+                </div>
+                <div class="col-sm-4">
+                    <label class="form-label">Modo de cÃ¡lculo</label>
+                    <select class="input-base" @bind="ivaModoCfg">
+                        <option value="excluido">Excluido (se suma al subtotal)</option>
+                        <option value="incluido">Incluido (ya viene en el precio)</option>
+                    </select>
+                </div>
+                <div class="col-sm-4">
+                    <button class="btn btn-primary-brand" @onclick="GuardarIvaCfg"><i class="bi bi-save"></i> Guardar IVA</button>
+                </div>
+            </div>
+            <small class="text-muted d-block mt-2">Si desactivas IVA, no se calcularÃ¡ ni mostrarÃ¡ en el carrito, tickets ni ventas.</small>
+            @if (!string.IsNullOrEmpty(mensajeIvaCfg))
+            {
+                <div class="alert alert-info mt-3 py-2">
+                    @mensajeIvaCfg
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@if (mostrarConfirmacionReset)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content card-surface" style="overflow:hidden;">
+                <div class="p-3 bg-brand-gradient text-white" style="border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);">
+                    <h5 class="mb-0">âš ï¸ Confirmar Reset</h5>
+                </div>
+                <div class="modal-body" style="background: var(--surface); color: #fff;">
+                    <p class="mb-2"><strong>Â¡ATENCIÃ“N!</strong> Esta acciÃ³n eliminarÃ¡ PERMANENTEMENTE:</p>
+                    <ul class="mb-3" style="color:rgba(255,255,255,0.85);">
+                        <li>Todos los productos</li>
+                        <li>Todas las ventas</li>
+                        <li>Todos los reportes</li>
+                        <li>Toda la informaciÃ³n de la base de datos</li>
+                    </ul>
+                    <p class="mb-2" style="color:#ff6b6b;"><strong>La base de datos quedarÃ¡ completamente vacÃ­a.</strong></p>
+                    <p class="mb-3" style="color:rgba(255,255,255,0.75);"><small>Consejo: Si quieres datos de ejemplo, usa el botÃ³n "Cargar Datos de Ejemplo" despuÃ©s del reset.</small></p>
+                    <p class="mb-0"><strong>Â¿EstÃ¡s seguro de continuar?</strong></p>
+                </div>
+                <div class="modal-footer" style="background: var(--surface);">
+                    <button type="button" class="btn btn-secondary" @onclick="CancelarReset">Cancelar</button>
+                    <button type="button" class="btn btn-danger" @onclick="ConfirmarReset">SÃ­, Resetear Todo</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private string rutaBaseDatos = "";
+    private string rutaImagenes = "";
+    private string rutaReportes = "";
+    private InfoBaseDatos? infoBaseDatos;
+    private bool mostrarConfirmacionReset = false;
+    private bool cargandoDatos = false;
+    private bool reporteAutomaticoActivo = false;
+    private string? mensajeConfigReporte = null;
+    
+    
+    private bool reporteAutomaticoHabilitado = false;
+    private string horaReporteAutomatico = "19:00"; 
+    private string? mensajeReporteAuto = null;
+    private bool reporteAutoExitoso = false;
+    private DateTime? proximaEjecucion = null;
+    
+    private string cfgTiendaNombre = string.Empty;
+    private string cfgTiendaDireccion = string.Empty;
+    private string cfgTiendaTelefono = string.Empty;
+
+    
+    private bool ivaActivoCfg = false;
+    private string ivaPorcentajeTexto = "16";
+    private string ivaModoCfg = "excluido"; 
+    private string? mensajeIvaCfg;
+    private string cfgTiendaLogo = string.Empty; 
+    private string cfgLogoNombre = string.Empty; 
+    private string cfgExtra1 = string.Empty;
+    private string cfgExtra2 = string.Empty;
+    private string cfgExtra3 = string.Empty;
+    private string? mensajeTicket;
+    private bool ticketExitoso;
+    private int cfgWidthDots = 384;
+    private string cfgReportEmailTo = string.Empty;
+    private string cfgReportEmailCc = string.Empty;
+    private string cfgReportEmailBcc = string.Empty;
+    [Inject] private EmailService EmailService { get; set; } = default!;
+    [Inject] private ReportePDFService PdfService { get; set; } = default!;
+    
+    private string cfgSmtpHost = string.Empty;
+    private int cfgSmtpPort = 587;
+    private string cfgSmtpUser = string.Empty;
+    private string cfgSmtpPass = string.Empty;
+    private string cfgSmtpFrom = string.Empty;
+    private bool cfgSmtpSsl = true;
+    private string? mensajeSmtp;
+    private bool smtpExitoso;
+    private bool mostrarSmtpDetalle = false;
+    private string? smtpLastError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarInformacion();
+        
+        
+        reporteAutomaticoActivo = await DatabaseService.ObtenerConfiguracionBoolAsync("ReporteAutomatico", false);
+        reporteAutomaticoHabilitado = await DatabaseService.ObtenerConfiguracionBoolAsync("ReporteAutomatico", false);
+        
+        var horaGuardada = await DatabaseService.ObtenerConfiguracionAsync("HoraReporteAutomatico");
+        if (!string.IsNullOrEmpty(horaGuardada))
+        {
+            horaReporteAutomatico = horaGuardada;
+        }
+        
+        await ActualizarProximaEjecucion();
+
+        
+        var nombreTienda = await DatabaseService.ObtenerConfiguracionAsync("TIENDA_NOMBRE");
+        if (string.IsNullOrWhiteSpace(nombreTienda))
+        {
+            await DatabaseService.GuardarConfiguracionAsync("TIENDA_NOMBRE", "Modelorama", "Nombre de la tienda mostrado en el ticket");
+        }
+        var dirTienda = await DatabaseService.ObtenerConfiguracionAsync("TIENDA_DIRECCION");
+        if (string.IsNullOrWhiteSpace(dirTienda))
+        {
+            await DatabaseService.GuardarConfiguracionAsync(
+                "TIENDA_DIRECCION",
+                "Av. Olivos, Las Torres Parte Baja, Las Torres, 22470 Tijuana, B.C.",
+                "DirecciÃ³n impresa en el ticket");
+        }
+
+        await CargarTicketConfig();
+    cfgReportEmailTo = await DatabaseService.ObtenerConfiguracionAsync("REPORT_EMAIL_TO") ?? string.Empty;
+    cfgReportEmailCc = await DatabaseService.ObtenerConfiguracionAsync("REPORT_EMAIL_CC") ?? string.Empty;
+    cfgReportEmailBcc = await DatabaseService.ObtenerConfiguracionAsync("REPORT_EMAIL_BCC") ?? string.Empty;
+    
+    cfgSmtpHost = await DatabaseService.ObtenerConfiguracionAsync("SMTP_HOST") ?? string.Empty;
+    var portStr = await DatabaseService.ObtenerConfiguracionAsync("SMTP_PORT");
+    if (!string.IsNullOrWhiteSpace(portStr) && int.TryParse(portStr, out var p)) cfgSmtpPort = p; else cfgSmtpPort = 587;
+    cfgSmtpUser = await DatabaseService.ObtenerConfiguracionAsync("SMTP_USER") ?? string.Empty;
+    cfgSmtpPass = await DatabaseService.ObtenerConfiguracionAsync("SMTP_PASS") ?? string.Empty;
+    cfgSmtpFrom = await DatabaseService.ObtenerConfiguracionAsync("SMTP_FROM") ?? string.Empty;
+    var sslStr = await DatabaseService.ObtenerConfiguracionAsync("SMTP_SSL");
+    if (!string.IsNullOrWhiteSpace(sslStr) && bool.TryParse(sslStr, out var b)) cfgSmtpSsl = b; else cfgSmtpSsl = true;
+        
+        try
+        {
+            var activo = await DatabaseService.ObtenerConfiguracionAsync("IVA_ACTIVO");
+            ivaActivoCfg = string.Equals(activo, "true", StringComparison.OrdinalIgnoreCase);
+
+            var porc = await DatabaseService.ObtenerConfiguracionAsync("IVA_PORCENTAJE");
+            if (!string.IsNullOrWhiteSpace(porc))
+                ivaPorcentajeTexto = porc;
+
+            var modo = await DatabaseService.ObtenerConfiguracionAsync("IVA_MODO");
+            if (!string.IsNullOrWhiteSpace(modo))
+                ivaModoCfg = (modo?.Trim().ToLowerInvariant() == "incluido") ? "incluido" : "excluido";
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"âš ï¸ No se pudo leer configuraciÃ³n de IVA: {ex.Message}");
+        }
+    }
+
+    private async Task GuardarIvaCfg()
+    {
+        try
+        {
+            await DatabaseService.GuardarConfiguracionAsync("IVA_ACTIVO", ivaActivoCfg.ToString().ToLowerInvariant(), "IVA activado/desactivado");
+            await DatabaseService.GuardarConfiguracionAsync("IVA_PORCENTAJE", ivaPorcentajeTexto, "Porcentaje de IVA (0-100 o 0-1)");
+            await DatabaseService.GuardarConfiguracionAsync("IVA_MODO", ivaModoCfg, "Modo de IVA (incluido/excluido)");
+            mensajeIvaCfg = "ConfiguraciÃ³n de IVA guardada";
+        }
+        catch (Exception ex)
+        {
+            mensajeIvaCfg = $"Error guardando IVA: {ex.Message}";
+        }
+    }
+
+    private async Task CargarInformacion()
+    {
+        try
+        {
+            await DatabaseService.InitializeAsync();
+            rutaBaseDatos = DatabaseService.GetDatabasePath();
+            rutaImagenes = ImagenService.ObtenerDirectorioImagenes();
+            rutaReportes = Path.Combine(FileSystem.AppDataDirectory, "Reportes");
+
+            var productos = await DatabaseService.GetProductosAsync();
+            var ventas = await DatabaseService.GetVentasAsync();
+
+            infoBaseDatos = new InfoBaseDatos
+            {
+                TotalProductos = productos.Count,
+                TotalVentas = ventas.Count,
+                TamanoArchivo = ObtenerTamanoArchivo(rutaBaseDatos)
+            };
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error cargando informaciÃ³n: {ex.Message}");
+        }
+    }
+
+    private async Task CargarTicketConfig()
+    {
+        cfgTiendaNombre = await DatabaseService.ObtenerConfiguracionAsync("TIENDA_NOMBRE") ?? string.Empty;
+        cfgTiendaDireccion = await DatabaseService.ObtenerConfiguracionAsync("TIENDA_DIRECCION") ?? string.Empty;
+        cfgTiendaTelefono = await DatabaseService.ObtenerConfiguracionAsync("TIENDA_TELEFONO") ?? string.Empty;
+        cfgTiendaLogo = await DatabaseService.ObtenerConfiguracionAsync("TIENDA_LOGO_PATH") ?? string.Empty;
+        cfgExtra1 = await DatabaseService.ObtenerConfiguracionAsync("TIENDA_EXTRA1") ?? string.Empty;
+        cfgExtra2 = await DatabaseService.ObtenerConfiguracionAsync("TIENDA_EXTRA2") ?? string.Empty;
+        cfgExtra3 = await DatabaseService.ObtenerConfiguracionAsync("TIENDA_EXTRA3") ?? string.Empty;
+        var widthStr = await DatabaseService.ObtenerConfiguracionAsync("PRINTER_WIDTH_DOTS");
+        if (!string.IsNullOrWhiteSpace(widthStr) && int.TryParse(widthStr, out var w)) cfgWidthDots = w; else cfgWidthDots = 384;
+        cfgLogoNombre = cfgTiendaLogo;
+        StateHasChanged();
+    }
+
+    private async Task GuardarTicketConfig()
+    {
+        try
+        {
+            await DatabaseService.GuardarConfiguracionAsync("TIENDA_NOMBRE", cfgTiendaNombre, "Nombre de la tienda para el ticket");
+            await DatabaseService.GuardarConfiguracionAsync("TIENDA_DIRECCION", cfgTiendaDireccion, "DirecciÃ³n de la tienda");
+            await DatabaseService.GuardarConfiguracionAsync("TIENDA_TELEFONO", cfgTiendaTelefono, "TelÃ©fono de la tienda");
+            await DatabaseService.GuardarConfiguracionAsync("TIENDA_LOGO_PATH", cfgTiendaLogo, "Archivo de logo");
+            await DatabaseService.GuardarConfiguracionAsync("TIENDA_EXTRA1", cfgExtra1, "LÃ­nea adicional 1");
+            await DatabaseService.GuardarConfiguracionAsync("TIENDA_EXTRA2", cfgExtra2, "LÃ­nea adicional 2");
+            await DatabaseService.GuardarConfiguracionAsync("TIENDA_EXTRA3", cfgExtra3, "LÃ­nea adicional 3");
+            await DatabaseService.GuardarConfiguracionAsync("PRINTER_WIDTH_DOTS", cfgWidthDots.ToString(), "Ancho en puntos del cabezal");
+            mensajeTicket = "âœ… ConfiguraciÃ³n de ticket guardada";
+            ticketExitoso = true;
+        }
+        catch (Exception ex)
+        {
+            mensajeTicket = $"âŒ Error guardando configuraciÃ³n: {ex.Message}";
+            ticketExitoso = false;
+        }
+    }
+
+    private async Task GuardarEmailReporte()
+    {
+        try
+        {
+            await DatabaseService.GuardarConfiguracionAsync("REPORT_EMAIL_TO", cfgReportEmailTo, "Correo destino para reportes");
+            await DatabaseService.GuardarConfiguracionAsync("REPORT_EMAIL_CC", cfgReportEmailCc, "CC para reportes");
+            await DatabaseService.GuardarConfiguracionAsync("REPORT_EMAIL_BCC", cfgReportEmailBcc, "BCC para reportes");
+            mensajeConfigReporte = "âœ… Correos guardados";
+        }
+        catch (Exception ex)
+        {
+            mensajeConfigReporte = $"âŒ Error guardando correo: {ex.Message}";
+        }
+    }
+
+    private async Task SeleccionarLogo()
+    {
+        try
+        {
+            var opciones = new PickOptions
+            {
+                PickerTitle = "Selecciona una imagen de logo",
+                FileTypes = FilePickerFileType.Images
+            };
+            var archivo = await FilePicker.Default.PickAsync(opciones);
+            if (archivo == null) return;
+
+            var extension = Path.GetExtension(archivo.FileName).ToLowerInvariant();
+            var permitidas = new[] { ".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp" };
+            if (!permitidas.Contains(extension))
+            {
+                mensajeTicket = "Formato no soportado. Usa PNG/JPG/GIF/WEBP.";
+                ticketExitoso = false;
+                return;
+            }
+
+            using var stream = await archivo.OpenReadAsync();
+            var nombre = await ImagenService.GuardarImagenAsync(stream, archivo.FileName);
+            if (!string.IsNullOrEmpty(nombre))
+            {
+                cfgTiendaLogo = nombre;
+                cfgLogoNombre = archivo.FileName;
+                mensajeTicket = "âœ… Logo cargado (recuerda Guardar)";
+                ticketExitoso = true;
+            }
+            else
+            {
+                mensajeTicket = "âŒ No se pudo guardar el logo";
+                ticketExitoso = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            mensajeTicket = $"âŒ Error seleccionando logo: {ex.Message}";
+            ticketExitoso = false;
+        }
+    }
+
+    private async Task EliminarLogo()
+    {
+        try
+        {
+            if (!string.IsNullOrEmpty(cfgTiendaLogo))
+            {
+                await ImagenService.EliminarImagenAsync(cfgTiendaLogo);
+                cfgTiendaLogo = string.Empty;
+                cfgLogoNombre = string.Empty;
+                await DatabaseService.GuardarConfiguracionAsync("TIENDA_LOGO_PATH", string.Empty, "Quitar logo");
+            }
+            mensajeTicket = "ðŸ—‘ï¸ Logo eliminado";
+            ticketExitoso = true;
+        }
+        catch (Exception ex)
+        {
+            mensajeTicket = $"âŒ Error eliminando logo: {ex.Message}";
+            ticketExitoso = false;
+        }
+    }
+
+    [Inject] private ReceiptPrinterService ReceiptPrinter { get; set; } = default!;
+    private async Task ImprimirPruebaTicket()
+    {
+        try
+        {
+            
+            var venta = new Venta
+            {
+                Id_Venta = 0,
+                Fecha_Venta = DateTime.Now,
+                Metodo_Pago = "Efectivo",
+                Total = 28.42m,
+                Impuesto = 3.92m,
+                Descuento = 0m,
+                PagoRecibido = 50m,
+                Cambio = 21.58m,
+                Cliente = "Prueba"
+            };
+            var detalles = new List<DetalleVenta>
+            {
+                new DetalleVenta{ Id_Producto=1, Producto=new Producto{ Nombre_Producto="Producto A"}, Cantidad=1, Precio_Unitario=10m, Subtotal=10m },
+                new DetalleVenta{ Id_Producto=2, Producto=new Producto{ Nombre_Producto="Producto B"}, Cantidad=2, Precio_Unitario=9.21m, Subtotal=18.42m },
+            };
+
+            var ok = await ReceiptPrinter.PrintTicketAsync(venta, detalles);
+            mensajeTicket = ok ? "âœ… Ticket de prueba enviado a la impresora" : "âš ï¸ No se pudo imprimir. Revisa la configuraciÃ³n de impresora";
+            ticketExitoso = ok;
+        }
+        catch (Exception ex)
+        {
+            mensajeTicket = $"âŒ Error imprimiendo: {ex.Message}";
+            ticketExitoso = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("attachDropHandler", "dropLogo");
+            }
+            catch { }
+        }
+    }
+
+    private string ObtenerTamanoArchivo(string rutaArchivo)
+    {
+        try
+        {
+            if (File.Exists(rutaArchivo))
+            {
+                var fileInfo = new FileInfo(rutaArchivo);
+                var bytes = fileInfo.Length;
+                
+                if (bytes < 1024)
+                    return $"{bytes} B";
+                else if (bytes < 1024 * 1024)
+                    return $"{bytes / 1024:F1} KB";
+                else
+                    return $"{bytes / (1024 * 1024):F1} MB";
+            }
+            return "No encontrado";
+        }
+        catch
+        {
+            return "Error";
+        }
+    }
+
+    private async Task CopiarRuta()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", rutaBaseDatos);
+            Console.WriteLine($"âœ… Ruta copiada al portapapeles: {rutaBaseDatos}");
+            
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"âŒ Error copiando ruta: {ex.Message}");
+            
+            Console.WriteLine($"Ruta de la base de datos: {rutaBaseDatos}");
+        }
+    }
+
+    private void AbrirCarpeta()
+    {
+        try
+        {
+            var directorio = Path.GetDirectoryName(rutaBaseDatos);
+            if (!string.IsNullOrEmpty(directorio) && Directory.Exists(directorio))
+            {
+                System.Diagnostics.Process.Start("explorer.exe", directorio);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error abriendo carpeta: {ex.Message}");
+        }
+    }
+
+    private void AbrirCarpetaImagenes()
+    {
+        try
+        {
+            if (Directory.Exists(rutaImagenes))
+            {
+                System.Diagnostics.Process.Start("explorer.exe", rutaImagenes);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error abriendo carpeta de imÃ¡genes: {ex.Message}");
+        }
+    }
+
+    private void AbrirCarpetaReportes()
+    {
+        try
+        {
+            
+            if (!Directory.Exists(rutaReportes))
+            {
+                Directory.CreateDirectory(rutaReportes);
+            }
+
+            if (OperatingSystem.IsWindows())
+            {
+                System.Diagnostics.Process.Start("explorer.exe", rutaReportes);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error abriendo carpeta de reportes: {ex.Message}");
+        }
+    }
+
+    private async Task CambiarReporteAutomatico(ChangeEventArgs e)
+    {
+        try
+        {
+            reporteAutomaticoActivo = (bool)(e.Value ?? false);
+            reporteAutomaticoHabilitado = reporteAutomaticoActivo;
+            
+            
+            await DatabaseService.GuardarConfiguracionAsync(
+                "ReporteAutomatico", 
+                reporteAutomaticoHabilitado.ToString(), 
+                "Habilita o deshabilita la generaciÃ³n automÃ¡tica de reportes diarios"
+            );
+            
+            
+            if (reporteAutomaticoHabilitado)
+            {
+                await ActualizarProximaEjecucion();
+                mensajeReporteAuto = "âœ… Reportes automÃ¡ticos activados correctamente";
+                reporteAutoExitoso = true;
+            }
+            else
+            {
+                proximaEjecucion = null;
+                mensajeReporteAuto = "â„¹ï¸ Reportes automÃ¡ticos desactivados";
+                reporteAutoExitoso = true;
+            }
+            
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"âŒ Error cambiando configuraciÃ³n de reporte automÃ¡tico: {ex.Message}");
+            mensajeReporteAuto = "âŒ Error al guardar la configuraciÃ³n";
+            reporteAutoExitoso = false;
+        }
+    }
+
+    private void CrearRespaldo()
+    {
+        try
+        {
+            var fechaHora = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            var nombreRespaldo = $"IntegraTechPOS_Respaldo_{fechaHora}.db";
+            var directorio = Path.GetDirectoryName(rutaBaseDatos);
+            
+            if (!string.IsNullOrEmpty(directorio))
+            {
+                var rutaRespaldo = Path.Combine(directorio, nombreRespaldo);
+                
+                if (File.Exists(rutaBaseDatos))
+                {
+                    File.Copy(rutaBaseDatos, rutaRespaldo);
+                    Console.WriteLine($"Respaldo creado en: {rutaRespaldo}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error creando respaldo: {ex.Message}");
+        }
+    }
+
+    private async Task CargarDatosEjemplo()
+    {
+        cargandoDatos = true;
+        StateHasChanged();
+        
+        try
+        {
+            Console.WriteLine("ðŸ“¦ Cargando datos de ejemplo...");
+            await DatabaseService.InsertSampleDataAsync();
+            await CargarInformacion(); 
+            Console.WriteLine("âœ… Datos de ejemplo cargados correctamente");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"âŒ Error cargando datos de ejemplo: {ex.Message}");
+        }
+        finally
+        {
+            cargandoDatos = false;
+            StateHasChanged();
+        }
+    }
+
+    private void MostrarConfirmacionReset()
+    {
+        mostrarConfirmacionReset = true;
+        StateHasChanged();
+    }
+
+    private void CancelarReset()
+    {
+        mostrarConfirmacionReset = false;
+        StateHasChanged();
+    }
+
+    private async Task ConfirmarReset()
+    {
+        try
+        {
+            Console.WriteLine("ðŸ”„ Iniciando reset de base de datos...");
+            
+            
+            await DatabaseService.CloseConnectionAsync();
+            
+            
+            await Task.Delay(500);
+            
+            
+            if (File.Exists(rutaBaseDatos))
+            {
+                File.Delete(rutaBaseDatos);
+                Console.WriteLine("ðŸ—‘ï¸ Archivo de base de datos eliminado");
+            }
+
+            
+            await DatabaseService.InitializeAsync();
+            
+            
+            await CargarInformacion();
+            
+            mostrarConfirmacionReset = false;
+            StateHasChanged();
+
+            Console.WriteLine("âœ… Base de datos reseteada correctamente");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"âŒ Error reseteando base de datos: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            mostrarConfirmacionReset = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task GuardarHoraReporte()
+    {
+        try
+        {
+            
+            if (TimeSpan.TryParse(horaReporteAutomatico, out var hora))
+            {
+                await DatabaseService.GuardarConfiguracionAsync(
+                    "HoraReporteAutomatico",
+                    horaReporteAutomatico,
+                    "Hora del dÃ­a en que se generan los reportes automÃ¡ticos"
+                );
+                
+                await ActualizarProximaEjecucion();
+                
+                mensajeReporteAuto = $"âœ… Hora guardada correctamente: {horaReporteAutomatico}";
+                reporteAutoExitoso = true;
+                StateHasChanged();
+            }
+            else
+            {
+                mensajeReporteAuto = "âŒ Formato de hora invÃ¡lido";
+                reporteAutoExitoso = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"âŒ Error guardando hora: {ex.Message}");
+            mensajeReporteAuto = "âŒ Error al guardar la hora";
+            reporteAutoExitoso = false;
+        }
+    }
+
+    private async Task GenerarYEnviarPdfHoy()
+    {
+        try
+        {
+            var hoy = DateTime.Today;
+            var ventasHoy = await DatabaseService.GetVentasAsync();
+            ventasHoy = ventasHoy?.Where(v => v.Fecha_Venta.Date == hoy).ToList() ?? new List<Venta>();
+            if (!ventasHoy.Any())
+            {
+                mensajeConfigReporte = "â„¹ï¸ No hay ventas de hoy para generar PDF";
+                return;
+            }
+            var pdf = await PdfService.GenerarReporteVentasPDFAsync(ventasHoy, hoy, DatabaseService);
+            var ok = await EmailService.EnviarAsync(cfgReportEmailTo, $"Reporte de Ventas {hoy:dd/MM/yyyy}", "Se adjunta el reporte PDF de ventas del dÃ­a.", new[] { pdf }, cfgReportEmailCc, cfgReportEmailBcc);
+            mensajeConfigReporte = ok ? "âœ… PDF generado y enviado por correo" : "âš ï¸ PDF generado pero no se pudo enviar el correo (ver configuraciÃ³n SMTP)";
+        }
+        catch (Exception ex)
+        {
+            mensajeConfigReporte = $"âŒ Error generando/enviando PDF: {ex.Message}";
+        }
+    }
+
+    private async Task GenerarYEnviarCsvHoy()
+    {
+        try
+        {
+            var hoy = DateTime.Today;
+            var ventasHoy = await DatabaseService.GetVentasAsync();
+            ventasHoy = ventasHoy?.Where(v => v.Fecha_Venta.Date == hoy).ToList() ?? new List<Venta>();
+            if (!ventasHoy.Any())
+            {
+                mensajeConfigReporte = "â„¹ï¸ No hay ventas de hoy para generar CSV";
+                return;
+            }
+            var csv = await PdfService.GenerarReporteVentasCSVAsync(ventasHoy, hoy, DatabaseService);
+            var ok = await EmailService.EnviarAsync(cfgReportEmailTo, $"CSV Ventas {hoy:dd/MM/yyyy}", "Se adjunta el CSV de ventas del dÃ­a.", new[] { csv }, cfgReportEmailCc, cfgReportEmailBcc);
+            mensajeConfigReporte = ok ? "âœ… CSV generado y enviado por correo" : "âš ï¸ CSV generado pero no se pudo enviar el correo (ver configuraciÃ³n SMTP)";
+        }
+        catch (Exception ex)
+        {
+            mensajeConfigReporte = $"âŒ Error generando/enviando CSV: {ex.Message}";
+        }
+    }
+
+    private async Task GuardarSmtp()
+    {
+        try
+        {
+            await DatabaseService.GuardarConfiguracionAsync("SMTP_HOST", cfgSmtpHost, "Servidor SMTP");
+            await DatabaseService.GuardarConfiguracionAsync("SMTP_PORT", cfgSmtpPort.ToString(), "Puerto SMTP");
+            await DatabaseService.GuardarConfiguracionAsync("SMTP_USER", cfgSmtpUser, "Usuario SMTP");
+            await DatabaseService.GuardarConfiguracionAsync("SMTP_PASS", cfgSmtpPass, "ContraseÃ±a SMTP");
+            await DatabaseService.GuardarConfiguracionAsync("SMTP_FROM", cfgSmtpFrom, "Remitente SMTP");
+            await DatabaseService.GuardarConfiguracionAsync("SMTP_SSL", cfgSmtpSsl.ToString(), "Usar SSL/TLS");
+            mensajeSmtp = "âœ… ConfiguraciÃ³n SMTP guardada";
+            smtpExitoso = true;
+        }
+        catch (Exception ex)
+        {
+            mensajeSmtp = $"âŒ Error guardando SMTP: {ex.Message}";
+            smtpExitoso = false;
+        }
+    }
+
+    private async Task ProbarSmtp()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(cfgReportEmailTo))
+            {
+                mensajeSmtp = "âš ï¸ Configura primero el correo destino de reportes";
+                smtpExitoso = false;
+                return;
+            }
+            var ok = await EmailService.EnviarAsync(cfgReportEmailTo, "Prueba SMTP - IntegraTech POS", "Este es un correo de prueba desde IntegraTech POS.");
+            mensajeSmtp = ok ? "âœ… Correo de prueba enviado" : "âš ï¸ No se pudo enviar el correo de prueba (ver configuraciÃ³n SMTP)";
+            smtpExitoso = ok;
+            if (!ok)
+            {
+                smtpLastError = await DatabaseService.ObtenerConfiguracionAsync("SMTP_LAST_ERROR");
+            }
+        }
+        catch (Exception ex)
+        {
+            mensajeSmtp = $"âŒ Error enviando prueba SMTP: {ex.Message}";
+            smtpExitoso = false;
+        }
+    }
+
+    private async Task MostrarDetalleSmtp()
+    {
+        mostrarSmtpDetalle = !mostrarSmtpDetalle;
+        if (mostrarSmtpDetalle && string.IsNullOrEmpty(smtpLastError))
+        {
+            smtpLastError = await DatabaseService.ObtenerConfiguracionAsync("SMTP_LAST_ERROR");
+        }
+    }
+
+    private async Task ActualizarProximaEjecucion()
+    {
+        try
+        {
+            if (reporteAutomaticoHabilitado && TimeSpan.TryParse(horaReporteAutomatico, out var horaObjetivo))
+            {
+                var ahora = DateTime.Now;
+                var horaHoy = DateTime.Today.Add(horaObjetivo);
+                proximaEjecucion = horaHoy > ahora ? horaHoy : horaHoy.AddDays(1);
+            }
+            else
+            {
+                proximaEjecucion = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"âŒ Error actualizando prÃ³xima ejecuciÃ³n: {ex.Message}");
+            proximaEjecucion = null;
+        }
+    }
+
+    private string ObtenerTiempoRestante()
+    {
+        if (!proximaEjecucion.HasValue) return "N/A";
+        
+        var diferencia = proximaEjecucion.Value - DateTime.Now;
+        
+        if (diferencia.TotalHours < 1)
+        {
+            return $"{diferencia.TotalMinutes:F0} minutos";
+        }
+        else if (diferencia.TotalHours < 24)
+        {
+            return $"{diferencia.TotalHours:F1} horas";
+        }
+        else
+        {
+            return $"{diferencia.TotalDays:F1} dÃ­as";
+        }
+    }
+
+    public class InfoBaseDatos
+    {
+        public int TotalProductos { get; set; }
+        public int TotalVentas { get; set; }
+        public string TamanoArchivo { get; set; } = "";
+    }
+
+    protected override void OnInitialized()
+    {
+        
+        if (!AuthService.EsAdministrador())
+        {
+            Navigation.NavigateTo("/acceso-denegado");
+        }
+    }
+}
+}

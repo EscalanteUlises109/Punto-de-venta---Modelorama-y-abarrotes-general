@@ -1,0 +1,106 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>IntegraTech-POS</title>
+    <base href="/" />
+    <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" />
+    <link rel="stylesheet" href="css/theme.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <link rel="stylesheet" href="IntegraTech-POS.styles.css" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+</head>
+
+<body>
+
+    <div class="status-bar-safe-area"></div>
+
+    <div id="app">Loading...</div>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">ðŸ—™</a>
+    </div>
+
+    
+    <script src="lib/chart.umd.min.js"></script>
+    <script src="js/charts.js"></script>
+    <script>
+      window.attachDropHandler = function (elementId) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+        const prevent = (e) => { e.preventDefault(); e.stopPropagation(); };
+        ["dragenter","dragover","dragleave","drop"].forEach(ev => el.addEventListener(ev, prevent));
+        el.addEventListener("drop", (e) => {
+          // No tenemos un canal directo a .NET para bytes aquÃ­ sin InputFile/JS interop avanzado.
+          // Como workaround: al soltar, disparamos el click para reusar SeleccionarLogo().
+          el.click();
+        });
+      };
+    </script>
+
+    <script src="_framework/blazor.webview.js" autostart="false"></script>
+
+    <script>
+        // Sistema de detecciÃ³n de escÃ¡ner de cÃ³digos de barras
+        window.barcodeScanner = {
+            dotNetRef: null,
+            buffer: '',
+            lastKeyTime: 0,
+            initialized: false,
+
+            initialize: function (dotNetReference) {
+                if (this.initialized) {
+                    console.log('ðŸ“· EscÃ¡ner ya estÃ¡ inicializado, actualizando referencia');
+                    this.dotNetRef = dotNetReference;
+                    return;
+                }
+
+                this.dotNetRef = dotNetReference;
+                console.log('ðŸ“· Inicializando detector de escÃ¡ner de cÃ³digos de barras...');
+
+                // Escuchar eventos de teclado
+                // Usar keydown para capturar teclas especiales como Enter de forma fiable
+                this._boundHandler = this.handleKeyPress.bind(this);
+                document.addEventListener('keydown', this._boundHandler, true);
+                this.initialized = true;
+                console.log('âœ… Detector de escÃ¡ner listo');
+            },
+
+            handleKeyPress: function (event) {
+                // Evitar procesar si el usuario estÃ¡ escribiendo en un input
+                const activeElement = document.activeElement;
+                const isInputField = activeElement && (
+                    activeElement.tagName === 'INPUT' ||
+                    activeElement.tagName === 'TEXTAREA' ||
+                    activeElement.isContentEditable
+                );
+
+                // Si estÃ¡ en un input, permitimos seguir enviando teclas para escÃ¡neres.
+                // El servicio C# decidirÃ¡ cuÃ¡ndo se trata de un escaneo (por timing y Enter/Tab final).
+
+                const currentTime = Date.now();
+                const key = event.key;
+
+                // Enviar la tecla al servicio C#
+                if (this.dotNetRef) {
+                    this.dotNetRef.invokeMethodAsync('OnKeyPress', key, currentTime);
+                }
+            },
+
+            dispose: function () {
+                if (this.initialized) {
+                    document.removeEventListener('keydown', this._boundHandler, true);
+                    this.dotNetRef = null;
+                    this.initialized = false;
+                    console.log('ðŸ“· Detector de escÃ¡ner desactivado');
+                }
+            }
+        };
+    </script>
+
+</body>
+
+</html>

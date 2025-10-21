@@ -1,0 +1,242 @@
+﻿@page "/"
+@using Microsoft.AspNetCore.Components.Web
+@using IntegraTech_POS.Services
+@using IntegraTech_POS.Models
+@using IntegraTech_POS.Components.Charts
+@using System.Linq
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+@inject DatabaseService DatabaseService
+
+<PageTitle>IntegraTech-POS - Inicio</PageTitle>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card-surface mb-4">
+                <div class="p-5 bg-brand-gradient text-white" style="border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);">
+                    <h1 class="display-4">Â¡Bienvenido a IntegraTech-POS!</h1>
+                    <p class="lead">Sistema de Punto de Venta integrado para gestionar tu negocio de manera eficiente.</p>
+                    <hr class="my-4" style="border-color: rgba(255,255,255,0.3);">
+                    <p>Gestiona productos, ventas e inventario desde una sola plataforma.</p>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a class="btn btn-light btn-lg" href="/ventas" role="button">
+                            <i class="fas fa-cash-register"></i> Ir a Ventas
+                        </a>
+                        <a class="btn btn-outline-light btn-lg" href="/producto/nuevo" role="button">
+                            <i class="fas fa-plus"></i> Agregar Producto
+                        </a>
+                        <a class="btn btn-outline-light btn-lg" href="/reportes" role="button">
+                            <i class="fas fa-chart-line"></i> Ver Reportes
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="row">
+        <div class="col-md-3 mb-4">
+            <div class="card-surface elev-1 p-3 text-center">
+                <div class="text-muted small">Ventas de Hoy</div>
+                <div class="display-6">$@ventasHoyTotal.ToString("N2")</div>
+                <div class="small text-muted">@ventasHoyCount transacciones</div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="card-surface elev-1 p-3 text-center">
+                <div class="text-muted small">Productos</div>
+                <div class="display-6">@totalProductos</div>
+                <div class="small @(lowStockCount>0?"text-danger":"text-muted")">@lowStockCount con stock bajo</div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="card-surface elev-1 p-3 text-center">
+                <div class="text-muted small">Ticket Promedio</div>
+                <div class="display-6">$@(ventasHoyCount>0 ? (ventasHoyTotal/ventasHoyCount).ToString("N2") : "0.00")</div>
+                <div class="small text-muted">Hoy</div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="card-surface elev-1 p-3 text-center">
+                <div class="text-muted small">Ventas Totales</div>
+                <div class="display-6">$@ventasTotales.ToString("N0")</div>
+                <div class="small text-muted">Acumulado</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card-surface elev-1">
+                <div class="p-4 text-center">
+                    <i class="fas fa-box-open fa-3x text-primary mb-3"></i>
+                    <h5 class="card-title">GestiÃ³n de Productos</h5>
+                    <p class="card-text">Administra tu inventario, precios y categorÃ­as de productos.</p>
+                    <a href="/productos" class="btn btn-primary-brand">Ir a Productos</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card-surface elev-1">
+                <div class="p-4 text-center">
+                    <i class="fas fa-cash-register fa-3x text-success mb-3"></i>
+                    <h5 class="card-title">Punto de Venta</h5>
+                    <p class="card-text">Procesa ventas de manera rÃ¡pida y eficiente.</p>
+                    <a href="/ventas" class="btn btn-success-brand">Ir a Ventas</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card-surface elev-1">
+                <div class="p-4 text-center">
+                    <i class="fas fa-chart-bar fa-3x text-info mb-3"></i>
+                    <h5 class="card-title">Reportes</h5>
+                    <p class="card-text">Analiza las ventas y rendimiento de tu negocio.</p>
+                    <a href="/reportes" class="btn btn-primary-brand">Ver Reportes</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        
+        <div class="col-lg-8 mb-4">
+            <div class="card-surface elev-1">
+                <div class="p-3 bg-brand-gradient text-white" style="border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);">
+                    <h5 class="mb-0">Ãšltimas ventas</h5>
+                </div>
+                <div class="p-3">
+                    @if (ultimasVentas?.Any() == true)
+                    {
+                        <div class="table-responsive">
+                            <table class="table data-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Fecha</th>
+                                        <th>Cliente</th>
+                                        <th>MÃ©todo</th>
+                                        <th class="text-end">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var v in ultimasVentas!.OrderByDescending(v=>v.Fecha_Venta).Take(5))
+                                    {
+                                        <tr>
+                                            <td>@v.Id_Venta</td>
+                                            <td>@v.Fecha_Venta.ToString("dd/MM HH:mm")</td>
+                                            <td>@(string.IsNullOrWhiteSpace(v.Cliente)?"Cliente general":v.Cliente)</td>
+                                            <td>@(string.IsNullOrWhiteSpace(v.Metodo_Pago)?"Efectivo":v.Metodo_Pago)</td>
+                                            <td class="text-end">$@v.Total.ToString("N2")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-0">AÃºn no hay ventas registradas.</p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        
+        <div class="col-lg-4 mb-4">
+            <div class="card-surface elev-1">
+                <div class="p-3 bg-brand-gradient text-white" style="border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);">
+                    <h5 class="mb-0">Consejos rÃ¡pidos</h5>
+                </div>
+                <div class="p-3">
+                    <ul class="mb-2">
+                        <li>Activa los reportes automÃ¡ticos en <strong>Sistema</strong>.</li>
+                        <li>Configura <strong>Stock MÃ­nimo</strong> para recibir alertas.</li>
+                        <li>Usa el <strong>escÃ¡ner</strong> para acelerar las ventas.</li>
+                    </ul>
+                    <a href="/sistema" class="btn btn-primary-brand w-100">Ir a Sistema</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="row">
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card-surface elev-1">
+                <div class="p-3 bg-brand-gradient text-white" style="border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);">
+                    <h5 class="mb-0">MÃ©todo de pago - Hoy</h5>
+                </div>
+                <div class="p-3">
+                    @if (metodosPagoLabels.Length > 0)
+                    {
+                        <PieChart Title="DistribuciÃ³n de mÃ©todos de pago (hoy)" Doughnut="true" Labels="@metodosPagoLabels" Data="@metodosPagoData" Height="140" />
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-0">Sin ventas hoy para mostrar distribuciÃ³n.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    
+    private decimal ventasHoyTotal = 0m;
+    private int ventasHoyCount = 0;
+    private int totalProductos = 0;
+    private int lowStockCount = 0;
+    private decimal ventasTotales = 0m;
+    private List<Venta>? ultimasVentas;
+    private string[] metodosPagoLabels = Array.Empty<string>();
+    private decimal[] metodosPagoData = Array.Empty<decimal>();
+
+    protected override void OnInitialized()
+    {
+        
+        if (!AuthService.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/login");
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await DatabaseService.InitializeAsync();
+
+            
+            var productos = await DatabaseService.GetProductosAsync();
+            totalProductos = productos.Count;
+            lowStockCount = productos.Count(p => p.Stock_Minimo > 0 && p.Cantidad <= p.Stock_Minimo);
+
+            
+            var ventas = await DatabaseService.GetVentasAsync();
+            ultimasVentas = ventas;
+            ventasHoyTotal = ventas.Where(v => v.Fecha_Venta.Date == DateTime.Today).Sum(v => v.Total);
+            ventasHoyCount = ventas.Count(v => v.Fecha_Venta.Date == DateTime.Today);
+            ventasTotales = ventas.Sum(v => v.Total);
+
+            
+            var hoyVentas = ventas.Where(v => v.Fecha_Venta.Date == DateTime.Today).ToList();
+            var porMetodo = hoyVentas
+                .GroupBy(v => string.IsNullOrWhiteSpace(v.Metodo_Pago) ? "Efectivo" : v.Metodo_Pago)
+                .Select(g => new { Metodo = g.Key, Total = g.Sum(v => v.Total) })
+                .OrderByDescending(x => x.Total)
+                .ToList();
+            metodosPagoLabels = porMetodo.Select(x => x.Metodo).ToArray();
+            metodosPagoData = porMetodo.Select(x => x.Total).ToArray();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Home: error cargando KPIs {ex.Message}");
+        }
+    }
+}

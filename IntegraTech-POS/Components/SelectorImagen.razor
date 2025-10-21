@@ -1,0 +1,158 @@
+﻿@inject IImagenService ImagenService
+@inject IJSRuntime JSRuntime
+@using Microsoft.Maui.Storage
+
+<div class="mb-3">
+    <label class="form-label">@Label</label>
+    <div class="d-flex gap-2 align-items-center">
+        <button type="button" class="btn btn-secondary" @onclick="SeleccionarImagenAsync">
+            <i class="bi bi-upload"></i> Elegir archivoâ€¦
+        </button>
+        @if (!string.IsNullOrEmpty(nombreArchivoSeleccionado))
+        {
+            <span class="text-muted small">@nombreArchivoSeleccionado</span>
+        }
+        <div class="flex-grow-1"></div>
+        @if (!string.IsNullOrEmpty(RutaImagenActual))
+        {
+            <button type="button" class="btn btn-outline-danger" @onclick="EliminarImagen" title="Eliminar imagen">
+                <i class="bi bi-trash"></i>
+            </button>
+        }
+    </div>
+    <small class="form-text text-muted">Formatos soportados: JPG, PNG, GIF, WEBP (mÃ¡x. 5MB)</small>
+</div>
+
+@if (mostrandoVista)
+{
+    <div class="mb-3">
+        <div class="text-center">
+            <ImagenProducto RutaImagen="@RutaImagenActual" 
+                          CssClass="img-thumbnail" 
+                          Style="max-width: 200px; max-height: 200px;" />
+        </div>
+    </div>
+}
+
+@if (subiendoImagen)
+{
+    <div class="mb-3">
+        <div class="progress">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                 role="progressbar" style="width: 100%">
+                Subiendo imagen...
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string Label { get; set; } = "Imagen del Producto";
+    [Parameter] public string RutaImagenActual { get; set; } = "";
+    [Parameter] public EventCallback<string> OnImagenCambiada { get; set; }
+    [Parameter] public bool MostrarVista { get; set; } = true;
+
+    private bool subiendoImagen = false;
+    private bool mostrandoVista = true;
+    private string nombreArchivoSeleccionado = string.Empty;
+
+    protected override void OnParametersSet()
+    {
+        mostrandoVista = MostrarVista;
+    }
+
+    private async Task SeleccionarImagenAsync()
+    {
+        try
+        {
+            var opciones = new PickOptions
+            {
+                PickerTitle = "Selecciona una imagen",
+                FileTypes = FilePickerFileType.Images
+            };
+
+            var resultado = await FilePicker.Default.PickAsync(opciones);
+            if (resultado == null)
+                return; 
+
+            nombreArchivoSeleccionado = resultado.FileName;
+
+            
+            var extensionesPermitidas = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+            var extension = Path.GetExtension(resultado.FileName).ToLowerInvariant();
+            if (!extensionesPermitidas.Contains(extension))
+            {
+                await MostrarError("Formato de archivo no soportado. Use JPG, PNG, GIF o WEBP.");
+                return;
+            }
+
+            
+            using var stream = await resultado.OpenReadAsync();
+
+            
+            try
+            {
+                if (stream.Length > 5 * 1024 * 1024)
+                {
+                    await MostrarError("El archivo es demasiado grande. MÃ¡ximo 5MB.");
+                    return;
+                }
+            }
+            catch
+            {
+                
+            }
+
+            subiendoImagen = true;
+            StateHasChanged();
+
+            
+            if (!string.IsNullOrEmpty(RutaImagenActual))
+            {
+                await ImagenService.EliminarImagenAsync(RutaImagenActual);
+            }
+
+            var nombreImagen = await ImagenService.GuardarImagenAsync(stream, resultado.FileName);
+            if (!string.IsNullOrEmpty(nombreImagen))
+            {
+                RutaImagenActual = nombreImagen;
+                await OnImagenCambiada.InvokeAsync(nombreImagen);
+            }
+            else
+            {
+                await MostrarError("Error al subir la imagen. IntÃ©ntelo de nuevo.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error seleccionando/subiendo imagen: {ex.Message}");
+            await MostrarError("No se pudo seleccionar la imagen. Intente nuevamente.");
+        }
+        finally
+        {
+            subiendoImagen = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task EliminarImagen()
+    {
+        if (!string.IsNullOrEmpty(RutaImagenActual))
+        {
+            var confirmado = await JSRuntime.InvokeAsync<bool>("confirm", "Â¿EstÃ¡ seguro de eliminar esta imagen?");
+            
+            if (confirmado)
+            {
+                await ImagenService.EliminarImagenAsync(RutaImagenActual);
+                RutaImagenActual = "";
+                await OnImagenCambiada.InvokeAsync("");
+                StateHasChanged();
+            }
+        }
+    }
+
+    private async Task MostrarError(string mensaje)
+    {
+        await JSRuntime.InvokeVoidAsync("alert", mensaje);
+    }
+}

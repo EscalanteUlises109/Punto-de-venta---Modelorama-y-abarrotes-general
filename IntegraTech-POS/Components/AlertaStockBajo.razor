@@ -1,0 +1,69 @@
+﻿@if (mostrarAlerta)
+{
+    <div class="alert alert-warning alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3" 
+         style="z-index: 9999; min-width: 400px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" 
+         role="alert">
+        <div class="d-flex align-items-center">
+            <i class="bi bi-exclamation-triangle-fill me-2" style="font-size: 1.5rem;"></i>
+            <div class="flex-grow-1">
+                <strong>âš ï¸ Stock Bajo!</strong>
+                <p class="mb-0">
+                    <strong>@NombreProducto</strong> tiene solo <strong>@StockActual</strong> unidades 
+                    (mÃ­nimo: @StockMinimo)
+                </p>
+            </div>
+            <button type="button" class="btn-close" @onclick="Cerrar"></button>
+        </div>
+        <div class="progress mt-2" style="height: 5px;">
+            <div class="progress-bar bg-danger" 
+                 role="progressbar" 
+                 style="width: @PorcentajeStock%"
+                 aria-valuenow="@PorcentajeStock" 
+                 aria-valuemin="0" 
+                 aria-valuemax="100">
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string NombreProducto { get; set; } = "";
+    [Parameter] public int StockActual { get; set; }
+    [Parameter] public int StockMinimo { get; set; }
+    [Parameter] public int DuracionSegundos { get; set; } = 5;
+    [Parameter] public EventCallback OnCerrar { get; set; }
+
+    private bool mostrarAlerta = false;
+    private System.Threading.Timer? timer;
+    private double PorcentajeStock => StockMinimo > 0 ? (double)StockActual / StockMinimo * 100 : 100;
+
+    public void Mostrar()
+    {
+        mostrarAlerta = true;
+        StateHasChanged();
+
+        
+        timer?.Dispose();
+        timer = new System.Threading.Timer(_ =>
+        {
+            InvokeAsync(async () =>
+            {
+                await Cerrar();
+            });
+        }, null, DuracionSegundos * 1000, Timeout.Infinite);
+    }
+
+    private async Task Cerrar()
+    {
+        mostrarAlerta = false;
+        timer?.Dispose();
+        await OnCerrar.InvokeAsync();
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        timer?.Dispose();
+    }
+}
+

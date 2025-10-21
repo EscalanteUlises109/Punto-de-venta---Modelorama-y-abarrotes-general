@@ -1,0 +1,60 @@
+@inject IImagenService ImagenService
+
+@if (!string.IsNullOrEmpty(RutaImagen))
+{
+    <img src="@imagenDataUrl" alt="@AltText" class="@CssClass" style="@Style" />
+}
+else
+{
+    <div class="d-flex align-items-center justify-content-center @CssClass" style="@Style background-color: #f8f9fa; border: 2px dashed #dee2e6;">
+        <div class="text-center text-muted">
+            <i class="bi bi-image" style="font-size: 2rem;"></i>
+            <br>
+            <small>Sin imagen</small>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string RutaImagen { get; set; } = "";
+    [Parameter] public string AltText { get; set; } = "Imagen del producto";
+    [Parameter] public string CssClass { get; set; } = "img-fluid";
+    [Parameter] public string Style { get; set; } = "";
+
+    private string imagenDataUrl = "";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await CargarImagen();
+    }
+
+    private async Task CargarImagen()
+    {
+        if (!string.IsNullOrEmpty(RutaImagen))
+        {
+            try
+            {
+                var imageBytes = await ImagenService.ObtenerImagenAsync(RutaImagen);
+                if (imageBytes != null)
+                {
+                    var base64String = Convert.ToBase64String(imageBytes);
+                    var extension = Path.GetExtension(RutaImagen).ToLower();
+                    var mimeType = extension switch
+                    {
+                        ".jpg" or ".jpeg" => "image/jpeg",
+                        ".png" => "image/png",
+                        ".gif" => "image/gif",
+                        ".webp" => "image/webp",
+                        _ => "image/jpeg"
+                    };
+                    imagenDataUrl = $"data:{mimeType};base64,{base64String}";
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error cargando imagen: {ex.Message}");
+                imagenDataUrl = "";
+            }
+        }
+    }
+}
