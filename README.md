@@ -1,7 +1,7 @@
 
 ## Qué es y cómo funciona
 
-Construí el sistema en .NET MAUI con Blazor. Eso me permite:
+ sistema en .NET MAUI con Blazor. Eso me permite:
 - Interfaz moderna y responsiva (Blazor + Razor Components).
 - Ejecutar nativo en Windows con .NET 8.
 - Guardar todo localmente con SQLite; no dependo de servidores externos.
